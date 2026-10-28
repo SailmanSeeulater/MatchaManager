@@ -97,6 +97,13 @@ public class CustomerManager : MonoBehaviour
         RefreshStatus();
     }
 
+    // Coins from a save file.
+    public void SetCoins(int coins)
+    {
+        Coins = coins;
+        RefreshStatus();
+    }
+
     // Fresh daily stats and an empty shop; the first customer walks in a second later.
     public void StartDay()
     {

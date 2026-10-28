@@ -6,6 +6,8 @@ using UnityEngine.UI;
 // realSecondsPerDay; at closing no new customers come in, the last one is
 // finished, and the end-of-day summary appears. NEXT DAY starts the next one
 // with a clean station and slightly busier, less patient customers.
+// Progress is saved at the start and end of every day: quitting mid-day
+// replays that day from its start; quitting at the summary resumes the next day.
 public class DayCycle : MonoBehaviour
 {
     public CustomerManager customers;
@@ -41,12 +43,22 @@ public class DayCycle : MonoBehaviour
     public bool IsOpen => minutes < OpenMinutes;
 
     float minutes; // game minutes since opening
+    SaveData save = new SaveData();
     float OpenMinutes => (closeHour - openHour) * 60f;
 
     void Start()
     {
         nextDayButton.onClick.AddListener(NextDay);
+        LoadSave();
         BeginDay();
+    }
+
+    // Picks up the saved day and coins (or day 1 with nothing, on a first run).
+    public void LoadSave()
+    {
+        save = SaveSystem.Load();
+        Day = Mathf.Max(1, save.day);
+        customers.SetCoins(save.coins);
     }
 
     void Update() => Tick(Time.deltaTime);
@@ -81,12 +93,23 @@ public class DayCycle : MonoBehaviour
         customers.StartDay();
         dayText.text = $"DAY {Day}";
         RefreshClock();
+        save.day = Day;
+        save.coins = customers.Coins;
+        SaveSystem.Save(save);
     }
 
     void EndDay()
     {
         Ended = true;
         var t = customers.Today;
+        bool newBest = t.happy > save.bestHappy;
+        save.bestHappy = Mathf.Max(save.bestHappy, t.happy);
+        save.totalServed += t.served;
+        save.totalHappy += t.happy;
+        save.day = Day + 1;
+        save.coins = customers.Coins;
+        SaveSystem.Save(save);
+
         summaryTitle.text = $"DAY {Day} DONE";
         string verdict = t.happy >= dailyGoal ? "<color=#2e5222>GOAL REACHED!</color>"
             : t.happy >= dailyGoal / 2 ? "NOT BAD!" : "TOMORROW WILL BE BETTER";
@@ -97,6 +120,7 @@ public class DayCycle : MonoBehaviour
             $"WALKED OUT<pos=70%>{t.walkedOut}\n" +
             $"EARNED<pos=70%><color=#2e5222>+{t.earned}</color>\n" +
             $"COINS<pos=70%>{customers.Coins}\n" +
+            $"BEST DAY<pos=70%>{save.bestHappy} HAPPY{(newBest && Day > 1 ? " <color=#2e5222>NEW!</color>" : "")}\n" +
             verdict;
         summary.SetActive(true);
         Debug.Log($"[Day] Day {Day} done: served {t.served}, happy {t.happy}, wrong {t.wrong}, walked out {t.walkedOut}, earned {t.earned}");

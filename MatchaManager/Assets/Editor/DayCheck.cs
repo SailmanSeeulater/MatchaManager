@@ -3,7 +3,8 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 
 // Headless check for the day cycle: clock steps, a happy and a walked-out
-// customer, closing while someone is still waiting, the summary, and day 2.
+// customer, closing while someone is still waiting, the summary, day 2, and
+// saving/loading (to a scratch save file, never the real one).
 // Run: Unity -batchmode -quit -projectPath . -executeMethod DayCheck.Run -captureOut out.png
 public static class DayCheck
 {
@@ -22,9 +23,13 @@ public static class DayCheck
         cup = day.cup;
         sunday = customers.recipes.First(r => r.displayName == "Sunday Matcha");
         Random.InitState(3);
+        SaveSystem.PathOverride = MatchaSceneBuilder.Arg("-savePath") ?? "Temp/DayCheckSave.json";
+        SaveSystem.Delete();
         customers.Init();
         customers.autoArrive = false;
+        day.LoadSave();
         day.BeginDay();
+        Debug.Log("[Check] save after opening: " + SaveFile());
         browser.ShowRoot();
         Log("opened");
 
@@ -49,10 +54,23 @@ public static class DayCheck
         day.Tick(0.1f); Log("summary");
         Debug.Log($"[Check] summary: {day.summaryTitle.text} :: {day.summaryBody.text.Replace("\n", " / ")}");
         MatchaSceneBuilder.Capture(MatchaSceneBuilder.Arg("-captureOut") ?? "DayCheck.png");
+        Debug.Log("[Check] save at summary: " + SaveFile());
 
         day.NextDay(); Log("next day");
         Debug.Log($"[Check] day 2 patienceScale={customers.patienceScale:0.00}");
+        Debug.Log("[Check] save on day 2: " + SaveFile());
+
+        // quit mid-day 2 after earning something: reloading goes back to the start of day 2
+        ServeCorrect();
+        Log("earned on day 2");
+        day.LoadSave();
+        day.BeginDay();
+        Log("reloaded");
+        SaveSystem.Delete();
+        SaveSystem.PathOverride = null;
     }
+
+    static string SaveFile() => System.IO.File.ReadAllText(SaveSystem.FilePath).Replace("\n", " ").Replace("    ", "");
 
     static void ServeCorrect()
     {
