@@ -4,9 +4,11 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// One customer at a time: they fade in, order a drink (shown in the bubble and
-// the recipe panel), wait while the patience bar drains, then react to what
-// they're served and leave. Serving hands over the cup, plus the tray's snack
+// Customers arrive every so often and wait in line (up to lineViews.Length).
+// The one at the counter orders a drink (shown in the bubble and the recipe
+// panel), waits while the patience bar drains, then reacts to what they're
+// served and leaves; the next in line steps up. People in line lose patience
+// too, just more slowly, and walk out if it runs out. Serving hands over the cup, plus the tray's snack
 // if they ordered one. Correct orders pay the price plus a patience tip.
 // DayCycle closes the door at the end of the day and resets the daily stats.
 public class CustomerManager : MonoBehaviour
@@ -16,12 +18,20 @@ public class CustomerManager : MonoBehaviour
         public int served, happy, wrong, walkedOut, earned;
     }
 
+    // One customer: what they want, how patient they still are, what they look like.
+    public class Patron
+    {
+        public Order order;
+        public float patience = 1;
+        public Sprite look;
+    }
+
     public List<DrinkRecipe> recipes = new List<DrinkRecipe>();
     public Cup cup;
     public SnackStation snacks;
 
     [Header("Shop")]
-    public CanvasGroup customer;
+    public CanvasGroup customer;     // the one at the counter
     public CanvasGroup orderUI;      // bubble + patience bar
     public TMP_Text orderText;
     public Image patienceFill;
@@ -37,11 +47,23 @@ public class CustomerManager : MonoBehaviour
     [Header("Timing (seconds)")]
     public float fadeTime = 0.4f;
     public float reactTime = 1.6f;
-    public Vector2 gapBetweenCustomers = new Vector2(1.5f, 3.5f);
+    [Tooltip("Pause before the next in line steps up to the counter")]
+    public Vector2 gapBetweenCustomers = new Vector2(0.6f, 1.2f);
+
+    [Header("Line")]
+    [Tooltip("Spots in line, nearest the counter first")]
+    public Image[] lineViews;
+    public Sprite[] looks;
+    [Tooltip("Seconds between new customers walking in")]
+    public Vector2 arrivalInterval = new Vector2(10, 20);
+    [Tooltip("How fast patience drains in line compared to at the counter")]
+    public float linePatienceRate = 0.4f;
+    [System.NonSerialized] public bool autoArrive = true; // the headless checks turn this off
 
     [Header("Set by DayCycle")]
     public bool open = true;          // new customers only come while open
     public float patienceScale = 1;   // < 1 = customers give up sooner
+    public float arrivalScale = 1;    // < 1 = customers come more often
 
     enum State { Away, Arriving, Waiting, Reacting, Leaving }
     State state;
@@ -51,7 +73,13 @@ public class CustomerManager : MonoBehaviour
     public Order CurrentOrder { get; private set; }
     public int Coins { get; private set; }
     public DayStats Today { get; private set; } = new DayStats();
-    public bool IsAway => state == State.Away;
+    // Nobody at the counter or in line.
+    public bool IsEmpty => state == State.Away && line.Count == 0;
+    public int LineLength => line.Count;
+
+    readonly List<Patron> line = new List<Patron>();
+    float arrivalTimer;
+    static readonly Color LineTint = new Color(0.82f, 0.82f, 0.88f); // a step further back
 
     static readonly Color PatienceLow = new Color(1f, 0.55f, 0.5f);
 
@@ -64,15 +92,18 @@ public class CustomerManager : MonoBehaviour
         cup.Changed += RefreshRecipe;
         if (snacks != null) snacks.Changed += RefreshRecipe;
         if (recipes.Count == 0) Debug.LogWarning("[Customers] No recipes: run Matcha > Import Drink Tree, then rebuild.");
-        GoAway(1f);
+        arrivalTimer = 1f;
+        GoAway(0.5f);
         RefreshStatus();
     }
 
-    // Fresh daily stats; the first customer shows up a second later.
+    // Fresh daily stats and an empty shop; the first customer walks in a second later.
     public void StartDay()
     {
         Today = new DayStats();
-        GoAway(1f);
+        line.Clear();
+        arrivalTimer = 1f;
+        GoAway(0.5f);
         RefreshStatus();
     }
 
@@ -80,10 +111,17 @@ public class CustomerManager : MonoBehaviour
     public void Tick(float dt)
     {
         timer -= dt;
+        TickLine(dt);
         switch (state)
         {
             case State.Away:
-                if (timer <= 0 && open && recipes.Count > 0) Arrive(Order.Random(recipes[Random.Range(0, recipes.Count)], Menu));
+                if (timer <= 0 && line.Count > 0)
+                {
+                    var next = line[0];
+                    line.RemoveAt(0);
+                    Arrive(next);
+                    RefreshLine();
+                }
                 break;
             case State.Arriving:
                 customer.alpha = Mathf.Clamp01(1 - timer / fadeTime);
@@ -109,9 +147,46 @@ public class CustomerManager : MonoBehaviour
         }
     }
 
-    public void Arrive(Order order)
+    // New arrivals join the end of the line; people in line slowly lose patience.
+    void TickLine(float dt)
     {
-        CurrentOrder = order;
+        if (autoArrive && open && recipes.Count > 0)
+        {
+            arrivalTimer -= dt;
+            if (arrivalTimer <= 0)
+            {
+                arrivalTimer = Random.Range(arrivalInterval.x, arrivalInterval.y) * arrivalScale;
+                if (line.Count < lineViews.Length) line.Add(NewPatron());
+                else Debug.Log("[Customers] Line is full; someone saw it and kept walking");
+            }
+        }
+        for (int i = line.Count - 1; i >= 0; i--)
+        {
+            var p = line[i];
+            p.patience -= dt * linePatienceRate / (p.order.PatienceSeconds * patienceScale);
+            if (p.patience > 0) continue;
+            line.RemoveAt(i);
+            Today.walkedOut++;
+            Debug.Log("[Customers] Gave up waiting in line");
+            RefreshStatus();
+        }
+        RefreshLine();
+    }
+
+    Patron NewPatron() => new Patron
+    {
+        order = Order.Random(recipes[Random.Range(0, recipes.Count)], Menu),
+        look = looks != null && looks.Length > 0 ? looks[Random.Range(0, looks.Length)] : null,
+    };
+
+    // Puts someone at the counter straight away (with full patience).
+    public void Arrive(Order order) => Arrive(new Patron { order = order, look = looks != null && looks.Length > 0 ? looks[0] : null });
+
+    public void Arrive(Patron patron)
+    {
+        CurrentOrder = patron.order;
+        patience = patron.patience;
+        ShowLook(customer.GetComponent<Image>(), patron.look);
         state = State.Arriving;
         timer = fadeTime;
         orderUI.alpha = 0;
@@ -121,7 +196,6 @@ public class CustomerManager : MonoBehaviour
     {
         state = State.Waiting;
         customer.alpha = orderUI.alpha = 1;
-        patience = 1;
         RefreshPatience();
         var lines = new List<string> { CurrentOrder.recipe.displayName.ToUpper() };
         lines.AddRange(CurrentOrder.requests.Select(r =>
@@ -180,6 +254,28 @@ public class CustomerManager : MonoBehaviour
         customer.alpha = orderUI.alpha = 0;
         cup.HasCustomer = false;
         RefreshRecipe();
+    }
+
+    void RefreshLine()
+    {
+        if (lineViews == null) return;
+        for (int i = 0; i < lineViews.Length; i++)
+        {
+            var view = lineViews[i];
+            view.enabled = i < line.Count;
+            if (!view.enabled) continue;
+            ShowLook(view, line[i].look);
+            // getting impatient: they go a bit red
+            view.color = line[i].patience < 0.35f ? Color.Lerp(LineTint, new Color(1f, 0.6f, 0.55f), 0.6f) : LineTint;
+        }
+    }
+
+    // Customer images are pivoted at the feet, so looks of different heights stand on the same spot.
+    static void ShowLook(Image view, Sprite look)
+    {
+        if (look == null || view.sprite == look) return;
+        view.sprite = look;
+        view.SetNativeSize();
     }
 
     void RefreshPatience()

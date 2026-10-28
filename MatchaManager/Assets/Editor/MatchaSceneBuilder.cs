@@ -71,7 +71,18 @@ public static class MatchaSceneBuilder
         var shop = Group(screen, "Shop");
         AddImage(shop, "Shop_Wall");
         AddImage(shop, "Shelf");
-        var customer = AddImage(shop, "Customer_Demo", "Customer").gameObject.AddComponent<CanvasGroup>();
+        // the line: further back (smaller, a little darker), left of the tray so snacks stay visible
+        var lineViews = new Image[2];
+        for (int i = 0; i < lineViews.Length; i++)
+        {
+            var spot = AddCustomerView(shop, "InLine_" + (i + 1), 115 - 43 * i);
+            spot.localScale = new Vector3(0.9f, 0.9f, 1);
+            lineViews[i] = spot.GetComponent<Image>();
+            lineViews[i].enabled = false;
+        }
+        var customer = AddCustomerView(shop, "Customer", 210.5f).gameObject.AddComponent<CanvasGroup>();
+        var looks = new[] { "Customer_Demo", "Customer_2", "Customer_3", "Customer_4" }
+            .Select(l => AssetDatabase.LoadAssetAtPath<Sprite>(LayerDir + l + ".png")).ToArray();
         AddImage(shop, "Shop_Counter");
         // click the tray to throw its snack away
         var tray = AddButton(shop, "Tray");
@@ -83,9 +94,10 @@ public static class MatchaSceneBuilder
         var orderGroup = orderUI.gameObject.AddComponent<CanvasGroup>();
         orderGroup.blocksRaycasts = false;
         var bubble = AddImage(orderUI, "Order_Bubble");
-        var order = AddText(bubble, "OrderText", 3, 2, 48, 30, "SUNDAY MATCHA\n<color=#8a2e2c>NO MILK</color>\n+ DANISH", 6, Ink, TextAlignmentOptions.Center);
-        // orders vary in length: wrap and shrink to fit the bubble
-        FitText(order, 3.5f, 6);
+        var order = AddText(bubble, "OrderText", 11, 2, 50, 32, "SUNDAY MATCHA\n<color=#8a2e2c>NO MILK</color>\n+ DANISH", 6, Ink, TextAlignmentOptions.Center);
+        // orders vary in length: wrap and shrink to fit the bubble, lines packed tight
+        FitText(order, 3, 6);
+        order.lineSpacing = -12;
         AddImage(orderUI, "Patience_Track");
         var fill = AddImage(orderUI, "Patience_Fill").GetComponent<Image>();
         fill.type = Image.Type.Filled;
@@ -245,6 +257,8 @@ public static class MatchaSceneBuilder
         customers.cup = cup;
         customers.snacks = snacks;
         customers.customer = customer;
+        customers.lineViews = lineViews;
+        customers.looks = looks;
         customers.orderUI = orderGroup;
         customers.orderText = order;
         customers.patienceFill = fill;
@@ -361,6 +375,16 @@ public static class MatchaSceneBuilder
         var img = go.GetComponent<Image>();
         img.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(LayerDir + layer + ".png");
         img.raycastTarget = false;
+        return rt;
+    }
+
+    // A customer image pivoted at the feet (bottom-center at x, standing behind the counter),
+    // so looks of different heights all stand on the same spot.
+    static RectTransform AddCustomerView(RectTransform parent, string name, float x)
+    {
+        var rt = AddImage(parent, "Customer_Demo", name);
+        rt.pivot = new Vector2(0.5f, 0);
+        rt.anchoredPosition = new Vector2(x, -144);
         return rt;
     }
 

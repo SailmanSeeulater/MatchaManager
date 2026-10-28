@@ -5,7 +5,7 @@ using UnityEngine.UI;
 // The shop's opening hours. The clock runs from opening to closing time over
 // realSecondsPerDay; at closing no new customers come in, the last one is
 // finished, and the end-of-day summary appears. NEXT DAY starts the next one
-// with a clean station and slightly less patient customers.
+// with a clean station and slightly busier, less patient customers.
 public class DayCycle : MonoBehaviour
 {
     public CustomerManager customers;
@@ -29,7 +29,7 @@ public class DayCycle : MonoBehaviour
     public float realSecondsPerDay = 300;
 
     [Header("Difficulty")]
-    [Tooltip("Customers are this much less patient each day (0.05 = 5%)")]
+    [Tooltip("Customers are this much less patient, and come this much more often, each day (0.05 = 5%)")]
     public float patienceDropPerDay = 0.05f;
     [Tooltip("Patience never drops below this fraction of day 1")]
     public float minPatience = 0.6f;
@@ -57,7 +57,7 @@ public class DayCycle : MonoBehaviour
         minutes = Mathf.Min(minutes + dt * OpenMinutes / realSecondsPerDay, OpenMinutes);
         customers.open = IsOpen;
         RefreshClock();
-        if (!IsOpen && customers.IsAway) EndDay();
+        if (!IsOpen && customers.IsEmpty) EndDay();
     }
 
     public void NextDay()
@@ -71,7 +71,10 @@ public class DayCycle : MonoBehaviour
         minutes = 0;
         Ended = false;
         summary.SetActive(false);
-        customers.patienceScale = Mathf.Max(minPatience, 1 - patienceDropPerDay * (Day - 1));
+        // later days: less patience and more customers
+        float hardness = Mathf.Max(minPatience, 1 - patienceDropPerDay * (Day - 1));
+        customers.patienceScale = hardness;
+        customers.arrivalScale = hardness;
         customers.open = true;
         cup.Clear();
         if (snacks != null) snacks.ResetAll();

@@ -20,6 +20,7 @@ local P = {
   shirt="5e74e0", shirtDk="4a5cc0", station="9fb1b8", stationLn="97a9b0", stationDk="7d8f96",
   glass="bdeffd", ice="e4f8fc", sky="bfe3f2", terracotta="c56a3c", terraDk="9a4f2a",
   paperLn="e3d6b8", disabled="c9d3d7",
+  skin2="c68a5e", skin2Dk="a06a44", skin3="f6d6b8", skin3Dk="dcb090", hairBlack="2a2230", blonde="e0b050",
 }
 for k, v in pairs(P) do P[k] = C(v) end
 
@@ -104,6 +105,7 @@ local function layer(name, fn)
   cur = Image(W, H, ColorMode.RGB)
   fn()
   spr:newCel(l, 1, cur, Point(0, 0))
+  return l
 end
 
 -- layout constants (kept from the original sprite) --------------------------
@@ -168,21 +170,39 @@ layer("Shelf", function()
   end
 end)
 
-layer("Customer_Demo", function()
+-- customers share one shape so Unity can swap them; only colors and hair differ.
+-- hair: "short", "long" (to the shoulders) or "bun"
+local function drawCustomer(c)
   local cx = 210
-  rbox(cx - 20, 68, 41, 76, P.shirt, P.ink, 9)
-  line(cx - 12, 80, cx - 13, 140, P.shirtDk); line(cx + 12, 80, cx + 13, 140, P.shirtDk)
+  rbox(cx - 20, 68, 41, 76, c.shirt, P.ink, 9)
+  line(cx - 12, 80, cx - 13, 140, c.shirtDk); line(cx + 12, 80, cx + 13, 140, c.shirtDk)
   for k = 0, 5 do px(cx - k, 69 + k, P.white); px(cx + k, 69 + k, P.white) end
   fill(cx - 1, 76, 2, 2, P.white); fill(cx - 1, 86, 2, 2, P.white)
-  fill(cx - 3, 63, 7, 6, P.skinDk)
-  disc(cx, 54, 10, P.ink); disc(cx, 54, 9, P.skin)
+  if c.hairStyle == "long" then fill(cx - 10, 52, 21, 16, P.ink); fill(cx - 9, 52, 19, 15, c.hair) end
+  fill(cx - 3, 63, 7, 6, c.skinDk)
+  if c.hairStyle == "bun" then disc(cx, 42, 5, P.ink); disc(cx, 42, 4, c.hair) end
+  disc(cx, 54, 10, P.ink); disc(cx, 54, 9, c.skin)
   for dy = -10, 10 do for dx = -10, 10 do
-    if dx*dx + dy*dy <= 90 and (dy <= -4 or (dy <= 2 and math.abs(dx) >= 7)) then px(cx + dx, 54 + dy, P.hair) end
+    if dx*dx + dy*dy <= 90 and (dy <= -4 or (dy <= 2 and math.abs(dx) >= 7)) then px(cx + dx, 54 + dy, c.hair) end
   end end
   fill(cx - 4, 54, 1, 2, P.ink); fill(cx + 4, 54, 1, 2, P.ink)
   px(cx - 7, 58, P.blush); px(cx - 6, 58, P.blush); px(cx + 6, 58, P.blush); px(cx + 7, 58, P.blush)
   px(cx - 2, 59, P.ink); fill(cx - 1, 60, 3, 1, P.ink); px(cx + 2, 59, P.ink)
+end
+
+layer("Customer_Demo", function()
+  drawCustomer{ shirt = P.shirt, shirtDk = P.shirtDk, skin = P.skin, skinDk = P.skinDk, hair = P.hair, hairStyle = "short" }
 end)
+-- extra looks for the queue; hidden here so the composed background only shows one customer
+layer("Customer_2", function()
+  drawCustomer{ shirt = P.m, shirtDk = P.mDk, skin = P.skin2, skinDk = P.skin2Dk, hair = P.hairBlack, hairStyle = "long" }
+end).isVisible = false
+layer("Customer_3", function()
+  drawCustomer{ shirt = P.red, shirtDk = P.redDk, skin = P.skin, skinDk = P.skinDk, hair = P.blonde, hairStyle = "bun" }
+end).isVisible = false
+layer("Customer_4", function()
+  drawCustomer{ shirt = P.orange, shirtDk = P.terraDk, skin = P.skin3, skinDk = P.skin3Dk, hair = P.grayLt, hairStyle = "short" }
+end).isVisible = false
 
 layer("Shop_Counter", function()
   fill(2, 137, 297, 5, P.counter)

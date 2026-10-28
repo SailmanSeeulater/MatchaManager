@@ -23,6 +23,7 @@ public static class DayCheck
         sunday = customers.recipes.First(r => r.displayName == "Sunday Matcha");
         Random.InitState(3);
         customers.Init();
+        customers.autoArrive = false;
         day.BeginDay();
         browser.ShowRoot();
         Log("opened");
@@ -72,7 +73,7 @@ public static class DayCheck
     {
         var t = customers.Today;
         Debug.Log($"[Check] {step,-18} {day.dayText.text} clock='{day.clockText.text}' open={day.IsOpen} ended={day.Ended} " +
-                  $"away={customers.IsAway} summary={day.summary.activeSelf} {customers.servedText.text} " +
+                  $"empty={customers.IsEmpty} summary={day.summary.activeSelf} {customers.servedText.text} " +
                   $"dots={customers.servedDots.Count(d => d.activeSelf)} coins={customers.Coins} " +
                   $"today(served={t.served} happy={t.happy} wrong={t.wrong} out={t.walkedOut} earned={t.earned})");
     }

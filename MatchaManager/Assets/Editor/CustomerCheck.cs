@@ -23,6 +23,7 @@ public static class CustomerCheck
         snacks = customers.snacks;
         Random.InitState(7);
         customers.Init();
+        customers.autoArrive = false;
         browser.ShowRoot();
         Debug.Log($"[Check] recipes: {string.Join(", ", customers.recipes.Select(r => r.displayName))}");
         Log("start");
