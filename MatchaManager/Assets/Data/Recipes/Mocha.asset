@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a35cd6ef847424c668bb0a4a58a57e96, type: 3}
+  m_Name: Mocha
+  m_EditorClassIdentifier: Assembly-CSharp::DrinkRecipe
+  displayName: Mocha
+  lines:
+  - node: {fileID: 11400000, guid: 493f17f57b77844fd871f8091c54209e, type: 2}
+    portions: 1
+    label: Coffee
+    optional: 0
+  - node: {fileID: 11400000, guid: f75bae36e6c3c47b9bff74e9ad78e7ea, type: 2}
+    portions: 1
+    label: Chocolate
+    optional: 0
+  - node: {fileID: 11400000, guid: ad974bec229294f90b7b6f27e3077263, type: 2}
+    portions: 1
+    label: Milk
+    optional: 0
+  price: 6
+  patienceSeconds: 50

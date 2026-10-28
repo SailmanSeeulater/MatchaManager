@@ -1,0 +1,67 @@
+# Unity generated folders (any project in this repo)
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Leftover empty Unity project shell at the top level; the real project is MatchaManager/
+/Assets/
+/Packages/
+/ProjectSettings/
+
+# Asset meta data should only be ignored when the corresponding asset is also ignored
+!/[Aa]ssets/**/*.meta
+
+# IDE / editor generated files
+.vs/
+.vscode/
+.idea/
+.gradle/
+ExportedObj/
+.consulo/
+*.csproj
+*.unityproj
+*.sln
+*.slnx
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# Unity crash reports and build artifacts
+sysinfo.txt
+crashlytics-buildid.txt
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Gradle cache directory
+.gradle/
+
+# Burst / Addressables generated
+/[Aa]ssets/[Ss]treamingAssets/aa.meta
+/[Aa]ssets/[Ss]treamingAssets/aa/*
+[Ll]ib[Bb]urst[Dd]ebug[Ii]nformation/
+
+# Claude's headless test screenshots
+MatchaManager/Preview.png
+
+# OS files
+.DS_Store
+Thumbs.db
