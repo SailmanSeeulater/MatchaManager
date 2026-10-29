@@ -12,6 +12,8 @@ public class DrinkBrowser : MonoBehaviour
     public DrinkNode root;
     public Button[] slots;
     public TMP_Text[] slotLabels;
+    public Image[] slotIcons;
+    public Sprite moreIcon;
     public Button backButton;
     public TMP_Text pathText;
     public Cup cup;
@@ -90,11 +92,13 @@ public class DrinkBrowser : MonoBehaviour
             {
                 slots[i].interactable = true;
                 slotLabels[i].text = $"MORE\n{page + 1}/{PageCount}";
+                ShowIcon(i, moreIcon);
             }
             else if (i < entries.Count)
             {
                 var node = entries[i];
                 slots[i].interactable = true;
+                ShowIcon(i, node.icon);
                 slotLabels[i].text = node.IsIngredient
                     ? $"{node.displayName.ToUpper()}\n<color=#3f6b2e>+{node.PortionLabel.ToUpper()}</color>"
                     : node.displayName.ToUpper();
@@ -103,10 +107,18 @@ public class DrinkBrowser : MonoBehaviour
             {
                 slots[i].interactable = false;
                 slotLabels[i].text = "";
+                ShowIcon(i, null);
             }
         }
         backButton.interactable = path.Count > 1;
         pathText.text = PathLabel();
+    }
+
+    void ShowIcon(int slot, Sprite icon)
+    {
+        if (slotIcons == null || slot >= slotIcons.Length) return;
+        slotIcons[slot].sprite = icon;
+        slotIcons[slot].enabled = icon != null;
     }
 
     // "HOME > FLAVORS > TEA"; when that's too long for the bar, the start is

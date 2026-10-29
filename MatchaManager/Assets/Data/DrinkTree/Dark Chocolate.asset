@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Dark Chocolate
   children: []
+  icon: {fileID: 21300000, guid: 4c50a774e372b48f0ac77eb2e22bc7d3, type: 3}
   portion: 1
   unit: pump
   cupColor: {r: 0.23137255, g: 0.14117648, b: 0.09411765, a: 1}
   cupPixels: 4
+  look: 1

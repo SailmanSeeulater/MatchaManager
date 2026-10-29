@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Jasmine
   children: []
+  icon: {fileID: 21300000, guid: b0c55cdd79cb5447e94d0b36fafaa1bb, type: 3}
   portion: 1
   unit: bag
   cupColor: {r: 0.9098039, g: 0.8627451, b: 0.6039216, a: 1}
   cupPixels: 8
+  look: 1

@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Stevia
   children: []
+  icon: {fileID: 21300000, guid: 8e234eb0b22e04012ac89b41163ca1d4, type: 3}
   portion: 15
   unit: g
   cupColor: {r: 0.9019608, g: 0.9490196, b: 0.8352941, a: 1}
   cupPixels: 2
+  look: 2

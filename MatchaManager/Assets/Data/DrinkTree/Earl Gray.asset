@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Earl Gray
   children: []
+  icon: {fileID: 21300000, guid: c617ec903adb84a17aa0466ed1e109e6, type: 3}
   portion: 1
   unit: bag
   cupColor: {r: 0.6901961, g: 0.47843137, b: 0.23529412, a: 1}
   cupPixels: 8
+  look: 1

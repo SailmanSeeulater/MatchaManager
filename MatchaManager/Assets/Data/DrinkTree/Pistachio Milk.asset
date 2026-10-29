@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Pistachio Milk
   children: []
+  icon: {fileID: 21300000, guid: 5f1bbf848e29344ab84404398c38d6ac, type: 3}
   portion: 6
   unit: oz
   cupColor: {r: 0.84705883, g: 0.8901961, b: 0.6901961, a: 1}
   cupPixels: 12
+  look: 1

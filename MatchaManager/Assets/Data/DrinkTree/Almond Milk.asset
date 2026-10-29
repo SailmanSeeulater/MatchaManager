@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Almond Milk
   children: []
+  icon: {fileID: 21300000, guid: 40b729af7b6e445ec9cb685d1010b64e, type: 3}
   portion: 6
   unit: oz
   cupColor: {r: 0.9372549, g: 0.8784314, b: 0.78431374, a: 1}
   cupPixels: 12
+  look: 1

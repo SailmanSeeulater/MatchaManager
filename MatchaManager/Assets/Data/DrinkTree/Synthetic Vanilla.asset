@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Synthetic Vanilla
   children: []
+  icon: {fileID: 21300000, guid: 74521f0000a9b44a994a28c4a1f9c0a0, type: 3}
   portion: 1
   unit: pump
   cupColor: {r: 0.9490196, g: 0.9019608, b: 0.7529412, a: 1}
   cupPixels: 4
+  look: 1

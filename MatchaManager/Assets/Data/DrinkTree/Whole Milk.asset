@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Whole Milk
   children: []
+  icon: {fileID: 21300000, guid: d771f1cf10c05443c9be85a1fb3a5c1b, type: 3}
   portion: 6
   unit: oz
   cupColor: {r: 0.96862745, g: 0.95686275, b: 0.9254902, a: 1}
   cupPixels: 12
+  look: 1

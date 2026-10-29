@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Maple Sugar
   children: []
+  icon: {fileID: 21300000, guid: 25590126efa4548e7b3792721ac815b1, type: 3}
   portion: 15
   unit: g
   cupColor: {r: 0.76862746, g: 0.49803922, b: 0.17254902, a: 1}
   cupPixels: 2
+  look: 2

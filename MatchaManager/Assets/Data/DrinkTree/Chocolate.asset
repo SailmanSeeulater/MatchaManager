@@ -17,7 +17,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0d2c6bd62228c44198939e63b000d0b4, type: 2}
   - {fileID: 11400000, guid: a72e0e76c3a664c1b98816f9666587e3, type: 2}
   - {fileID: 11400000, guid: 5b944f4f7d0c240939bd192c00aae531, type: 2}
+  icon: {fileID: 21300000, guid: 30b5278b9e3ea4caa8c9e6793cb0d89d, type: 3}
   portion: 1
   unit: 
   cupColor: {r: 1, g: 1, b: 1, a: 1}
   cupPixels: 6
+  look: 0

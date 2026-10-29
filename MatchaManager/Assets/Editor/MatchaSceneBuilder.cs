@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
@@ -18,6 +19,7 @@ public static class MatchaSceneBuilder
     const string ScenePath = "Assets/Scenes/Main.unity";
     const string SnackDir = "Assets/Data/Snacks";
     const string AudioDir = "Assets/Audio";
+    const string IconDir = "Assets/Art/Icons";
     const int RefWidth = 480, RefHeight = 270;
 
     // text sizes: the pixel font is crisp at whole multiples of its 7px line
@@ -117,12 +119,18 @@ public static class MatchaSceneBuilder
         AddImage(drink, "Drink_Station_Background");
         // placeholder labels for the editor; DrinkBrowser fills them from the drink tree at runtime
         string[] placeholder = { "DAIRY", "FLAVORS", "SWEETENERS", "MISC", "" };
+        string[] placeholderIcons = { "Dairy", "Flavors", "Sweeteners", "Misc", "" };
         var slots = new Button[5];
         var slotLabels = new TMP_Text[5];
+        var slotIcons = new Image[5];
         for (int i = 0; i < 5; i++)
         {
             var slot = AddButton(drink, "Slot_" + (i + 1));
-            var label = AddText(slot, "Label", 2, 0, 53, 24, placeholder[i], Px, Ink, TextAlignmentOptions.Center);
+            // icon and key number on the left, name on the right
+            slotIcons[i] = AddRect(slot, "Icon", 3, 4, 8, 8, Color.white).GetComponent<Image>();
+            slotIcons[i].sprite = Icon(placeholderIcons[i]);
+            slotIcons[i].enabled = slotIcons[i].sprite != null;
+            var label = AddText(slot, "Label", 12, 0, 44, 24, placeholder[i], Px, Ink, TextAlignmentOptions.Center);
             Wrap(label);
             slots[i] = slot.GetComponent<Button>();
             slotLabels[i] = label;
@@ -148,12 +156,28 @@ public static class MatchaSceneBuilder
         cup.serveButton = serve.GetComponent<Button>();
         cup.dumpButton = glass.GetComponent<Button>();
         cup.readout = readout;
+        cup.powderGrain = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Cup/Powder_Grain.png");
+        cup.iceCube = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Cup/Ice_Cube.png");
+        var iceFront = new GameObject("IceFront", typeof(RectTransform)).GetComponent<RectTransform>();
+        iceFront.SetParent(contents, false);
+        iceFront.anchorMin = Vector2.zero;
+        iceFront.anchorMax = Vector2.one;
+        iceFront.sizeDelta = Vector2.zero;
+        cup.iceFront = iceFront;
 
         var browser = drink.gameObject.AddComponent<DrinkBrowser>();
         browser.root = AssetDatabase.LoadAssetAtPath<DrinkNode>(DrinkTreeImporter.RootAssetPath);
         if (browser.root == null) Debug.LogWarning("[Matcha] No drink tree yet: run Matcha > Import Drink Tree, then rebuild.");
         browser.slots = slots;
         browser.slotLabels = slotLabels;
+        browser.slotIcons = slotIcons;
+        browser.moreIcon = Icon("_More");
+        if (browser.root != null)
+        {
+            AssignIcons(browser.root, Icon("_Default"));
+            AssignLooks(browser.root, new List<string>());
+            AssetDatabase.SaveAssets();
+        }
         browser.backButton = back.GetComponent<Button>();
         browser.pathText = pathText;
         browser.cup = cup;
@@ -332,6 +356,64 @@ public static class MatchaSceneBuilder
             back.GetComponent<Button>(), tabMenu.GetComponent<Button>(), tabRecipe.GetComponent<Button>(), titleButton,
             nextDayButton, continueButton, newGameButton,
         }.Concat(drinkRows).Concat(snackRows).ToArray();
+
+        // --- Keyboard shortcuts + the key letters drawn on each button ---
+        var keys = new GameObject("KeyboardShortcuts").AddComponent<KeyboardShortcuts>();
+        var hints = new List<GameObject>();
+        var dimInk = new Color(Ink.r, Ink.g, Ink.b, 0.5f);
+        var dimCream = new Color(Cream.r, Cream.g, Cream.b, 0.7f);
+        void Hint(RectTransform parent, float x, float y, string key, Color color) =>
+            hints.Add(AddText(parent, "KeyHint", x, y, key.Length * 4 + 2, 7, key, Px, color, TextAlignmentOptions.TopLeft).gameObject);
+        // right-aligned against a parent's right edge
+        void HintRight(RectTransform parent, float right, float y, string key, Color color) =>
+            Hint(parent, right - (key.Length * 4 - 1), y, key, color);
+
+        var bindings = new List<KeyboardShortcuts.Binding>();
+        void Bind(Key key, Key alt, RectTransform button) =>
+            bindings.Add(new KeyboardShortcuts.Binding { key = key, altKey = alt, button = button.GetComponent<Button>() });
+
+        for (int i = 0; i < slots.Length; i++)
+        {
+            Bind(Key.Digit1 + i, Key.Numpad1 + i, (RectTransform)slots[i].transform);
+            Hint((RectTransform)slots[i].transform, 5, 13, (i + 1).ToString(), dimInk); // under the icon
+        }
+        Bind(Key.Backspace, Key.Escape, back);
+        HintRight(back, rects["Back_Button"].w - 4, 2, "ESC", dimInk);
+        Bind(Key.Space, Key.Enter, serve);
+        var serveRect = rects["Serve_Button"];
+        Hint(drink, serveRect.x + serveRect.w / 2f - 10, 119, "SPACE", dimInk); // just above the SERVE label
+        Bind(Key.X, Key.None, glass);
+        var cupRect = rects["Cup"];
+        Hint(drink, cupRect.x - 7, cupRect.y + cupRect.h - 7, "X", dimInk);
+
+        Key[] snackKeys = { Key.Q, Key.W, Key.E, Key.A, Key.S, Key.D };
+        for (int i = 0; i < snackSlots.Count; i++)
+        {
+            var rt = (RectTransform)snackSlots[i].button.transform;
+            Bind(snackKeys[i], Key.None, rt);
+            var r = rects[rt.name];
+            Hint(prep, r.x - 8, r.y - 2, snackKeys[i].ToString(), i < 3 ? dimInk : dimCream);
+        }
+        Bind(Key.R, Key.None, micro);
+        Hint(micro, 6, 6, "R", dimCream);
+        Bind(Key.F, Key.None, oven);
+        Hint(oven, 8, 6, "F", dimCream);
+        Bind(Key.T, Key.None, tray);
+        var trayRect = rects["Tray"];
+        Hint(shop, trayRect.x - 6, trayRect.y - 3, "T", dimCream);
+        Hint(recipe, 393, 174, "TAB", dimCream);
+        HintRight(continueRt, 137, 2, "ENTER", dimCream);
+        HintRight((RectTransform)newGameButton.transform, 137, 2, "N", dimInk);
+        HintRight((RectTransform)nextDayButton.transform, 97, 2, "ENTER", dimCream);
+
+        keys.game = bindings.ToArray();
+        keys.recipePanel = panel;
+        keys.title = title;
+        keys.continueButton = continueButton;
+        keys.newGameButton = newGameButton;
+        keys.summary = summary.gameObject;
+        keys.nextDayButton = nextDayButton;
+        keys.hints = hints.ToArray();
         var preview = AddImage(screen, "Text_Preview");
         preview.gameObject.SetActive(false); // reference only: real text is TextMeshPro
 
@@ -434,6 +516,38 @@ public static class MatchaSceneBuilder
         btn.colors = colors;
         btn.navigation = new Navigation { mode = Navigation.Mode.None };
         return btn;
+    }
+
+    // Icon sprite for a drink-tree name ("Oat Milk" -> Assets/Art/Icons/Oat Milk.png), null if none.
+    static Sprite Icon(string name) =>
+        string.IsNullOrEmpty(name) ? null : AssetDatabase.LoadAssetAtPath<Sprite>($"{IconDir}/{name}.png");
+
+    // Gives every node without an icon its own (by name) or else its folder's, so new
+    // vault entries still get a sensible picture. Icons picked in the Inspector are kept.
+    static void AssignIcons(DrinkNode node, Sprite inherited)
+    {
+        if (node.icon == null)
+        {
+            node.icon = Icon(node.displayName) ?? inherited;
+            EditorUtility.SetDirty(node);
+        }
+        foreach (var child in node.children) AssignIcons(child, node.icon);
+    }
+
+    // Resolves CupLook.Auto from the tree: Ice is ice, anything under Sweeteners or
+    // Matcha is a powder, the rest are liquids. Looks picked in the Inspector are kept.
+    static void AssignLooks(DrinkNode node, List<string> ancestors)
+    {
+        if (node.IsIngredient && node.look == CupLook.Auto)
+        {
+            node.look = node.displayName == "Ice" ? CupLook.Ice
+                : ancestors.Contains("Sweeteners") || ancestors.Contains("Matcha") ? CupLook.Powder
+                : CupLook.Liquid;
+            EditorUtility.SetDirty(node);
+        }
+        ancestors.Add(node.displayName);
+        foreach (var child in node.children) AssignLooks(child, ancestors);
+        ancestors.RemoveAt(ancestors.Count - 1);
     }
 
     // Plain colored rectangle (no sprite), in its parent's top-left pixel coords.

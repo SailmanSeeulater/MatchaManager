@@ -16,7 +16,9 @@ MonoBehaviour:
   children:
   - {fileID: 11400000, guid: 967d01af06ed14b5e9b43b94a71ffb4e, type: 2}
   - {fileID: 11400000, guid: ae5c7b2bc33894b87a5201fa15534276, type: 2}
+  icon: {fileID: 21300000, guid: 18672a153588a4fa8a955531f95db409, type: 3}
   portion: 1
   unit: 
   cupColor: {r: 1, g: 1, b: 1, a: 1}
   cupPixels: 6
+  look: 0

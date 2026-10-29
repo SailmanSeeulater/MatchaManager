@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Oat Milk
   children: []
+  icon: {fileID: 21300000, guid: 56eb0df5ab53e449bbda151a90b36173, type: 3}
   portion: 6
   unit: oz
   cupColor: {r: 0.9098039, g: 0.8509804, b: 0.70980394, a: 1}
   cupPixels: 12
+  look: 1

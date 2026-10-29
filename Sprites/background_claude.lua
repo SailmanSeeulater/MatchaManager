@@ -461,6 +461,82 @@ end)
 
 spr:saveAs(out)
 
+-- 8x8 icons for the drink tree buttons, exported one PNG per drink-tree name when run
+-- with --script-param icondir=... ("a" = main color, "b" = accent, "k" = ink, "w" = white).
+local SHAPES = {
+  carton = {"..kkk...", ".kbbbk..", "kaaaaak.", "kabbbak.", "kabbbak.", "kaaaaak.", "kaaaaak.", "kkkkkkk."},
+  cube   = {"........", ".kkkkkk.", ".kwaaak.", ".kaaabk.", ".kaaabk.", ".kabbbk.", ".kkkkkk.", "........"},
+  pile   = {"........", "........", "...kk...", "..kaak..", ".kaabak.", "kaaaabbk", "kkkkkkkk", "........"},
+  leaf   = {"......kk", "....kkak", "..kkaabk", ".kaabaak", "kaabaak.", "kabaak..", "kbkkk...", "k......."},
+  drop   = {"...k....", "..kak...", "..kak...", ".kaaak..", "kawaaak.", "kawaaak.", ".kaaak..", "..kkk..."},
+  icecube= {"........", ".kkkkkk.", "kwwaaabk", "kwaaaabk", "kaaaaabk", "kaaaabbk", "kbbbbbbk", ".kkkkkk."},
+  bean   = {"........", "..kkkk..", ".kaabak.", "kaabaak.", "kaabaak.", "kabaak..", ".kkkk...", "........"},
+  bar    = {"........", "kkkkkkk.", "kaakaak.", "kbbkbbk.", "kkkkkkk.", "kaakaak.", "kbbkbbk.", "kkkkkkk."},
+  flower = {"...k....", "..kak...", "kkkakkk.", "kaabaak.", "kkkakkk.", "..kak...", "...k....", "........"},
+  teabag = {"...k....", "...k....", "..kkk...", ".kaaak..", ".kaaak..", ".kabak..", ".kaaak..", "..kkk..."},
+  pod    = {"......kk", ".....kak", "....kab.", "...kab..", "..kab...", ".kab....", "kab.....", "kk......"},
+  bottle = {"...kk...", "...kk...", "..kaak..", ".kaaaak.", ".kwbbak.", ".kwbbak.", ".kaaaak.", "..kkkk.."},
+  maple  = {"...k....", "k.kak.k.", "kakaakak", ".kaaaak.", "kaaaaaak", ".kkaakk.", "...kk...", "...k...."},
+  bowl   = {"........", "........", "kkkkkkkk", "kaaaaaak", ".kbbbbk.", ".kbbbbk.", "..kkkk..", "..kkkk.."},
+  box    = {"........", ".kkkkkk.", "kaaaaaak", "kkkkkkkk", "kbbwwbbk", "kbbbbbbk", "kbbbbbbk", "kkkkkkkk"},
+  sparkle= {"...k....", "..kak...", ".kkakk..", "kaabaak.", ".kkakk..", "..kak...", "...k..k.", ".....kak"},
+  more   = {"........", "...k....", "...kk...", "kkkkak..", "kaaaaak.", "kkkkak..", "...kk...", "...k...."},
+  dot    = {"........", "........", "..kkkk..", ".kaaabk.", ".kaaabk.", ".kabbbk.", "..kkkk..", "........"},
+}
+local ICONS = {
+  -- folders
+  {"Dairy", "carton", P.white, P.sky}, {"Non-Dairy", "carton", P.mPale, P.m},
+  {"Flavors", "sparkle", P.yellow, P.orange}, {"Tea", "leaf", P.m, P.mDk}, {"Matcha", "bowl", P.m, P.terracotta},
+  {"Chocolate", "bar", P.wood, P.woodDk}, {"Vanilla", "flower", P.cream, P.yellow}, {"Coffee", "bean", P.woodDk, P.hair},
+  {"Sweeteners", "cube", P.white, P.grayLt}, {"Misc", "box", P.woodLt, P.wood},
+  -- dairy
+  {"Whole Milk", "carton", P.white, P.sky}, {"Half and Half", "carton", P.white, P.creamDk}, {"Heavy Cream", "carton", P.cream, P.yellow},
+  {"Oat Milk", "carton", P.creamDk, P.woodLt}, {"Almond Milk", "carton", P.cream, P.wood}, {"Soy Milk", "carton", P.cream, P.mLt},
+  {"Pistachio Milk", "carton", P.mPale, P.mLt},
+  -- flavors
+  {"Ceremonial Matcha", "pile", P.m, P.mDk}, {"Low-Grade Matcha", "pile", P.mLt, P.gray},
+  {"Hojicha", "leaf", P.wood, P.woodDk}, {"Jasmine", "flower", P.white, P.yellow}, {"Earl Gray", "teabag", P.grayLt, P.gray},
+  {"Dark Chocolate", "bar", P.woodDk, P.hair}, {"Milk Chocolate", "bar", P.woodLt, P.wood}, {"White Chocolate", "bar", P.cream, P.creamDk},
+  {"Real Vanilla", "pod", P.woodDk, P.hair}, {"Synthetic Vanilla", "bottle", P.cream, P.yellow},
+  {"Arabrica", "bean", P.wood, P.woodDk}, {"Robusta", "bean", P.woodDk, P.hair}, {"Decaf", "bean", P.woodLt, P.wood},
+  -- sweeteners
+  {"Cane Sugar", "pile", P.creamDk, P.woodLt}, {"White Sugar", "cube", P.white, P.grayLt}, {"Brown Sugar", "cube", P.woodLt, P.wood},
+  {"Maple Sugar", "maple", P.orange, P.red}, {"Stevia", "leaf", P.mLt, P.m},
+  -- misc
+  {"Water", "drop", P.cyan, P.cyanDk}, {"Ice", "icecube", P.ice, P.cyan},
+  -- browser
+  {"_More", "more", P.m, P.mDk}, {"_Default", "dot", P.grayLt, P.gray},
+}
+local icondir = app.params["icondir"]
+if icondir then
+  for _, ic in ipairs(ICONS) do
+    local img = Image(8, 8, ColorMode.RGB)
+    local colors = { a = ic[3], b = ic[4], k = P.ink, w = P.white }
+    for y, row in ipairs(SHAPES[ic[2]]) do for x = 1, 8 do
+      local c = colors[row:sub(x, x)]
+      if c then img:drawPixel(x - 1, y - 1, c) end
+    end end
+    img:saveAs(app.fs.joinPath(icondir, ic[1] .. ".png"))
+  end
+end
+
+-- Cup textures for solid ingredients, exported with --script-param cupdir=...:
+-- Powder_Grain tiles over a powder layer (tinted darker in Unity), Ice_Cube floats in the drink.
+local cupdir = app.params["cupdir"]
+if cupdir then
+  local function sprite(name, rows, colors)
+    local img = Image(#rows[1], #rows, ColorMode.RGB)
+    for y, row in ipairs(rows) do for x = 1, #row do
+      local c = colors[row:sub(x, x)]
+      if c then img:drawPixel(x - 1, y - 1, c) end
+    end end
+    img:saveAs(app.fs.joinPath(cupdir, name .. ".png"))
+  end
+  sprite("Powder_Grain", {"w.....", "...w..", ".....w", ".w....", "....w.", "..w..."}, { w = P.white })
+  sprite("Ice_Cube", {".ooooo.", "ohhfffo", "ohffffo", "offfffo", "offffso", "offssso", ".ooooo."},
+    { o = C("5ec8dd", 235), h = P.white, f = C("e4f8fc", 215), s = C("8fd9e8", 225) })
+end
+
 -- The same 3x5 font as a glyph atlas for Unity: white glyphs on transparent, one per
 -- 8x8 cell with a clear border, so text rendering never picks up a neighbor's pixels.
 -- plus PixelFont.json with each glyph's code point, cell and width.

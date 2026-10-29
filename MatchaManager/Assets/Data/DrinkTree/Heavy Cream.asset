@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Heavy Cream
   children: []
+  icon: {fileID: 21300000, guid: a9479d238b7f347709e726831a6a3b0f, type: 3}
   portion: 6
   unit: oz
   cupColor: {r: 1, g: 0.972549, b: 0.90588236, a: 1}
   cupPixels: 12
+  look: 1

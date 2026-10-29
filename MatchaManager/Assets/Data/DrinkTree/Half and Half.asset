@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Half and Half
   children: []
+  icon: {fileID: 21300000, guid: 9e2a50b0b050f48b58583417ccf6e9bd, type: 3}
   portion: 6
   unit: oz
   cupColor: {r: 0.9529412, g: 0.91764706, b: 0.8392157, a: 1}
   cupPixels: 12
+  look: 1

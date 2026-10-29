@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Low-Grade Matcha
   children: []
+  icon: {fileID: 21300000, guid: 5b03df6eefa9d4008a16cc06ad697664, type: 3}
   portion: 100
   unit: g
   cupColor: {r: 0.5411765, g: 0.6039216, b: 0.2901961, a: 1}
   cupPixels: 8
+  look: 2

@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Arabrica
   children: []
+  icon: {fileID: 21300000, guid: ae0dcb9d3186f4db8908da29a47e5364, type: 3}
   portion: 1
   unit: shot
   cupColor: {r: 0.36862746, g: 0.21568628, b: 0.1254902, a: 1}
   cupPixels: 8
+  look: 1

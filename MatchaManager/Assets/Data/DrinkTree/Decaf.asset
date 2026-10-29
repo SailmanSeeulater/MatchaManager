@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Decaf
   children: []
+  icon: {fileID: 21300000, guid: 9f781810281ee41f987d6bd9afaf271f, type: 3}
   portion: 1
   unit: shot
   cupColor: {r: 0.47843137, g: 0.32156864, b: 0.21176471, a: 1}
   cupPixels: 8
+  look: 1

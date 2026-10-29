@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Brown Sugar
   children: []
+  icon: {fileID: 21300000, guid: 9066a643b26174e33b75c23a188218a2, type: 3}
   portion: 15
   unit: g
   cupColor: {r: 0.627451, g: 0.4392157, b: 0.23529412, a: 1}
   cupPixels: 2
+  look: 2

@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Water
   children: []
+  icon: {fileID: 21300000, guid: 0ced88f931d16438185a4bd9d70dfe85, type: 3}
   portion: 4
   unit: oz
   cupColor: {r: 0.7882353, g: 0.9254902, b: 0.96862745, a: 1}
   cupPixels: 8
+  look: 1

@@ -1,6 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// How an ingredient looks in the glass. Auto lets Build Scene pick from the drink tree
+// (sweeteners and matcha are powders, Ice is ice, everything else is liquid).
+public enum CupLook { Auto, Liquid, Powder, Ice }
+
 // One entry in the drink tree. Nodes with children are folders (Dairy, Tea...),
 // nodes without children are ingredients the player can add to the cup.
 // Generated from the Obsidian vault by Matcha > Import Drink Tree.
@@ -9,6 +13,8 @@ public class DrinkNode : ScriptableObject
 {
     public string displayName;
     public List<DrinkNode> children = new List<DrinkNode>();
+    [Tooltip("8x8 icon on its button; Build Scene fills it from Assets/Art/Icons/<name>.png, or the parent's icon")]
+    public Sprite icon;
 
     [Header("Ingredient (nodes without children)")]
     [Tooltip("Recipe-sized amount one click adds, e.g. 6")]
@@ -19,6 +25,8 @@ public class DrinkNode : ScriptableObject
     public Color cupColor = Color.white;
     [Tooltip("How many pixels tall one portion fills the cup")]
     public int cupPixels = 6;
+    [Tooltip("Liquid = smooth layer, Powder = grainy layer, Ice = cubes floating in the drink")]
+    public CupLook look = CupLook.Auto;
 
     public bool IsIngredient => children.Count == 0;
     public string PortionLabel => $"{portion:0.##} {unit}".Trim();
