@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a35cd6ef847424c668bb0a4a58a57e96, type: 3}
+  m_Name: Sesame Hojicha
+  m_EditorClassIdentifier: Assembly-CSharp::DrinkRecipe
+  displayName: Sesame Hojicha
+  lines:
+  - node: {fileID: 11400000, guid: 51798a472163f436cb86dac0370c684a, type: 2}
+    portions: 1
+    label: 
+    optional: 0
+  - node: {fileID: 11400000, guid: fd87a30d76a4640fe877015aecf74f10, type: 2}
+    portions: 1
+    label: 
+    optional: 0
+  - node: {fileID: 11400000, guid: ad974bec229294f90b7b6f27e3077263, type: 2}
+    portions: 1
+    label: Milk
+    optional: 0
+  - node: {fileID: 11400000, guid: cfd39a9e21c344c14b59bd5f13036449, type: 2}
+    portions: 1
+    label: 
+    optional: 0
+  price: 7
+  patienceSeconds: 45
+  defaultsVersion: 3

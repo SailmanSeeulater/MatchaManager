@@ -158,8 +158,8 @@ public static class MatchaSceneBuilder
         var drink = Group(screen, "DrinkStation");
         AddImage(drink, "Drink_Station_Background");
         // placeholder labels for the editor; DrinkBrowser fills them from the drink tree at runtime
-        string[] placeholder = { "DAIRY", "FLAVORS", "SWEETENERS", "MISC", "" };
-        string[] placeholderIcons = { "Dairy", "Flavors", "Sweeteners", "Misc", "" };
+        string[] placeholder = { "DAIRY", "DRINK TYPE", "SWEETENERS", "MISC", "TOPPINGS" };
+        string[] placeholderIcons = { "Dairy", "Drink Type", "Sweeteners", "Misc", "Toppings" };
         var slots = new Button[5];
         var slotLabels = new TMP_Text[5];
         var slotIcons = new Image[5];
@@ -613,40 +613,43 @@ public static class MatchaSceneBuilder
         foreach (var child in node.children) AssignIcons(child, node.icon);
     }
 
-    // Default cost per portion and quality stars, where the tree has a cheap and a premium choice.
+    // Default cost per portion, where the tree has a cheap and a premium choice.
     // Applied once per ingredient (economyVersion); after that the Inspector values are yours.
-    static readonly Dictionary<string, (int cost, int quality)> Economy = new Dictionary<string, (int, int)>
+    static readonly Dictionary<string, int> Economy = new Dictionary<string, int>
     {
-        { "Whole Milk", (1, 2) }, { "Half and Half", (1, 2) }, { "Heavy Cream", (2, 3) },
-        { "Oat Milk", (2, 2) }, { "Almond Milk", (2, 2) }, { "Soy Milk", (1, 1) }, { "Pistachio Milk", (3, 3) },
-        { "Ceremonial Matcha", (3, 3) }, { "Low-Grade Matcha", (1, 1) },
-        { "Hojicha", (2, 2) }, { "Jasmine", (1, 2) }, { "Earl Gray", (1, 2) },
-        { "Dark Chocolate", (2, 3) }, { "Milk Chocolate", (1, 2) }, { "White Chocolate", (1, 1) },
-        { "Real Vanilla", (2, 3) }, { "Synthetic Vanilla", (0, 1) },
-        { "Arabrica", (2, 3) }, { "Robusta", (1, 1) }, { "Decaf", (1, 2) },
-        { "Cane Sugar", (1, 2) }, { "White Sugar", (0, 1) }, { "Brown Sugar", (1, 2) }, { "Maple Sugar", (2, 3) }, { "Stevia", (1, 2) },
-        { "Water", (0, 0) }, { "Ice", (0, 0) },
+        { "Whole Milk", 1 }, { "Half and Half", 1 }, { "Heavy Cream", 2 },
+        { "Oat Milk", 2 }, { "Almond Milk", 2 }, { "Soy Milk", 1 }, { "Pistachio Milk", 3 },
+        { "Ceremonial Matcha", 3 }, { "Low-Grade Matcha", 1 },
+        { "Hojicha", 2 }, { "Jasmine", 1 }, { "Earl Gray", 1 },
+        { "Dark Chocolate", 2 }, { "Milk Chocolate", 1 }, { "White Chocolate", 1 },
+        { "Arabrica", 2 }, { "Robusta", 1 }, { "Decaf", 1 }, { "Cold Brew", 2 },
+        { "Cane Sugar", 1 }, { "White Sugar", 0 }, { "Brown Sugar", 1 }, { "Stevia", 1 },
+        { "Maple Syrup", 2 }, { "Vanilla Syrup", 1 }, { "Ube Syrup", 2 },
+        { "Water", 0 }, { "Hot Water", 0 }, { "Cold Water", 0 }, { "Sparkling Water", 1 }, { "Ice", 0 },
+        { "Coconut Flakes", 1 }, { "Caramel Honeycomb", 2 }, { "Caramel Drizzle", 1 }, { "Biscoff Crumbles", 1 },
+        { "Cheese Foam", 2 }, { "Sesame Foam", 2 }, { "Matcha Foam", 2 },
     };
 
     static void AssignCosts(DrinkNode node)
     {
         if (node.IsIngredient && node.economyVersion < 1)
         {
-            if (Economy.TryGetValue(node.displayName, out var e)) { node.cost = e.cost; node.quality = e.quality; }
+            if (Economy.TryGetValue(node.displayName, out var cost)) node.cost = cost;
             node.economyVersion = 1;
             EditorUtility.SetDirty(node);
         }
         foreach (var child in node.children) AssignCosts(child);
     }
 
-    // Resolves CupLook.Auto from the tree: Ice is ice, anything under Sweeteners or
-    // Matcha is a powder, the rest are liquids. Looks picked in the Inspector are kept.
+    // Resolves CupLook.Auto from the tree: Ice is ice, sugars, matcha and crumbly garnishes
+    // are powders, the rest (syrups, foams, drizzle) are liquids. Looks picked in the Inspector are kept.
     static void AssignLooks(DrinkNode node, List<string> ancestors)
     {
         if (node.IsIngredient && node.look == CupLook.Auto)
         {
             node.look = node.displayName == "Ice" ? CupLook.Ice
-                : ancestors.Contains("Sweeteners") || ancestors.Contains("Matcha") ? CupLook.Powder
+                : node.displayName == "Caramel Drizzle" ? CupLook.Liquid
+                : ancestors.Contains("Sugar") || ancestors.Contains("Matcha") || ancestors.Contains("Garnish") ? CupLook.Powder
                 : CupLook.Liquid;
             EditorUtility.SetDirty(node);
         }
@@ -761,12 +764,12 @@ public static class MatchaSceneBuilder
             b => { b.unclearChance = 0.15f; b.unclearChancePerDay = 0.02f; b.maxUnclearChance = 0.35f; },
             b => { b.unclearChance = 0.3f; b.unclearChancePerDay = 0.03f; b.maxUnclearChance = 0.6f; },
         };
-        // cost to operate: cheaper and more forgiving on easy, pricier with pickier customers on hard
+        // cost to operate: cheaper on easy, pricier on hard
         var presetsV2 = new System.Action<Balance>[]
         {
-            b => { b.startingCoins = 30; b.costMultiplier = 0.7f; b.casualChance = 0.5f; b.connoisseurChance = 0.1f; b.connoisseurPerDay = 0.01f; b.maxConnoisseur = 0.2f; },
+            b => { b.startingCoins = 30; b.costMultiplier = 0.7f; },
             b => { },
-            b => { b.startingCoins = 15; b.costMultiplier = 1.2f; b.casualChance = 0.2f; b.connoisseurChance = 0.35f; b.connoisseurPerDay = 0.03f; b.maxConnoisseur = 0.6f; },
+            b => { b.startingCoins = 15; b.costMultiplier = 1.2f; },
         };
         var result = new Balance[DifficultyPaths.Length];
         for (int i = 0; i < DifficultyPaths.Length; i++)

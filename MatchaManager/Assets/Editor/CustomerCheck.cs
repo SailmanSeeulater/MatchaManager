@@ -34,7 +34,7 @@ public static class CustomerCheck
         customers.Arrive(new Order(sunday));
         customers.Tick(1);
         Log("arrived");
-        Make("Ceremonial Matcha", "Water", "Oat Milk");
+        Make("Ceremonial Matcha", "Hot Water", "Oat Milk");
         Log("almost made");
         Make("Cane Sugar");
         Log("made");
@@ -47,7 +47,7 @@ public static class CustomerCheck
         // 2. a drink nobody ordered (extra milk): it stays in the cup and the customer keeps waiting
         customers.Arrive(new Order(sunday));
         customers.Tick(1);
-        Make("Ceremonial Matcha", "Water", "Oat Milk", "Whole Milk", "Stevia");
+        Make("Ceremonial Matcha", "Hot Water", "Oat Milk", "Whole Milk", "Stevia");
         Log("wrong drink");
         cup.Serve();
         Log("served wrong");
@@ -163,7 +163,7 @@ public static class CustomerCheck
     {
         customers.Arrive(order);
         customers.Tick(1);
-        Make("Ceremonial Matcha", "Water", "Oat Milk", "Cane Sugar");
+        Make("Ceremonial Matcha", "Hot Water", "Oat Milk", "Cane Sugar");
         prepSnack();
         Log("tray: " + what);
         int before = customers.Coins;

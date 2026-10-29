@@ -18,6 +18,10 @@ MonoBehaviour:
     portions: 1
     label: Matcha
     optional: 0
+  - node: {fileID: 11400000, guid: fd87a30d76a4640fe877015aecf74f10, type: 2}
+    portions: 1
+    label: 
+    optional: 0
   - node: {fileID: 11400000, guid: ad974bec229294f90b7b6f27e3077263, type: 2}
     portions: 1
     label: Milk
@@ -28,4 +32,4 @@ MonoBehaviour:
     optional: 1
   price: 5
   patienceSeconds: 40
-  defaultsVersion: 1
+  defaultsVersion: 3

@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f470038767344e74a85d0859c14d463, type: 3}
+  m_Name: Biscoff Crumbles
+  m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
+  displayName: Biscoff Crumbles
+  children: []
+  icon: {fileID: 21300000, guid: 5ea3080110525437bb96541c5409ced6, type: 3}
+  portion: 1
+  unit: pinch
+  cupColor: {r: 0.70980394, g: 0.46666667, b: 0.22745098, a: 1}
+  cupPixels: 2
+  look: 2
+  cost: 1
+  economyVersion: 1

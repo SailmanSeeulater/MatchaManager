@@ -15,6 +15,9 @@ MonoBehaviour:
   displayName: Misc
   children:
   - {fileID: 11400000, guid: 37372eb9e5b294605ac33b3edfd4bba2, type: 2}
+  - {fileID: 11400000, guid: fd87a30d76a4640fe877015aecf74f10, type: 2}
+  - {fileID: 11400000, guid: 4b8d972e3cea34c0094068ceb3a80b0c, type: 2}
+  - {fileID: 11400000, guid: 02721e4b43f2548fbada61477424dfcf, type: 2}
   - {fileID: 11400000, guid: 08422272ebff54f27838fd4d85c6e3f8, type: 2}
   icon: {fileID: 21300000, guid: 598d3bf3853eb4c98b6dbd28257a649f, type: 3}
   portion: 1
@@ -22,3 +25,5 @@ MonoBehaviour:
   cupColor: {r: 1, g: 1, b: 1, a: 1}
   cupPixels: 6
   look: 0
+  cost: 1
+  economyVersion: 0

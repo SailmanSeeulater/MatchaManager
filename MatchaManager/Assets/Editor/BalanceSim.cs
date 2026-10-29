@@ -20,7 +20,7 @@ using UnityEngine;
 public static class BalanceSim
 {
     // How bots pick between cheap and premium ingredients for "any" lines.
-    public enum Shopping { Smart, Cheapest, Premium }
+    public enum Shopping { Cheapest, Random, Premium }
 
     class Profile
     {
@@ -73,7 +73,7 @@ public static class BalanceSim
                 report.AppendLine();
             }
         }
-        // does matching palates pay? same regular bot, three ways of choosing ingredients (Medium)
+        // how much does choosing cheap pay? same regular bot, three ways of filling ANY lines (Medium)
         report.AppendLine("PROFIT by ingredient choice (REGULAR bot, MEDIUM): profit/happy at days 1, 5, 10");
         foreach (Shopping shopping in System.Enum.GetValues(typeof(Shopping)))
         {
@@ -99,7 +99,7 @@ public static class BalanceSim
     }
 
     static void SimulateWeek(Profile profile, int seed, List<CustomerManager.DayStats>[] days, int difficulty,
-        Shopping shopping = Shopping.Smart)
+        Shopping shopping = Shopping.Cheapest)
     {
         EditorSceneManager.OpenScene(ScenePath);
         Object.FindAnyObjectByType<TitleScreen>().gameObject.SetActive(false);
@@ -225,17 +225,16 @@ public static class BalanceSim
             profile.think + Clicks(order) * profile.click +
             (order.snack == null ? 0 : order.snack.needsHeating ? Mathf.Max(3 * profile.click, snacks.appliances[0].readySeconds) : profile.click);
 
-        // Smart: the cheapest ingredient good enough for this customer; Cheapest / Premium ignore the palate.
-        DrinkNode Choose(DrinkNode node, int palate)
+        // Cheapest is what a player who remembers the costs does; Random is grabbing whatever.
+        DrinkNode Choose(DrinkNode node)
         {
             var options = node.Ingredients().ToList();
             switch (shopping)
             {
-                case Shopping.Cheapest: return options.OrderBy(n => n.cost).ThenByDescending(n => n.quality).First();
-                case Shopping.Premium: return options.OrderByDescending(n => n.quality).ThenBy(n => n.cost).First();
+                case Shopping.Cheapest: return options.OrderBy(n => n.cost).First();
+                case Shopping.Premium: return options.OrderByDescending(n => n.cost).First();
                 default:
-                    return options.Where(n => n.quality == 0 || n.quality >= palate).OrderBy(n => n.cost).FirstOrDefault()
-                           ?? options.OrderByDescending(n => n.quality).First();
+                    return options[Random.Range(0, options.Count)];
             }
         }
 
@@ -252,7 +251,7 @@ public static class BalanceSim
                 snacks.ClickSlot(System.Array.FindIndex(snacks.slots, s => s.snack == order.snack));
             foreach (var line in order.lines.Where(l => !l.removed))
             {
-                var pick = Choose(line.node, target.palate);
+                var pick = Choose(line.node);
                 for (int i = 0; i < line.portions; i++) cup.Add(pick);
             }
             cup.Serve();

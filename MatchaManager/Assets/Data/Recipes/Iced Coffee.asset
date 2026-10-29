@@ -22,7 +22,7 @@ MonoBehaviour:
     portions: 1
     label: 
     optional: 0
-  - node: {fileID: 11400000, guid: 37372eb9e5b294605ac33b3edfd4bba2, type: 2}
+  - node: {fileID: 11400000, guid: 4b8d972e3cea34c0094068ceb3a80b0c, type: 2}
     portions: 1
     label: 
     optional: 0
@@ -36,4 +36,4 @@ MonoBehaviour:
     optional: 1
   price: 5
   patienceSeconds: 35
-  defaultsVersion: 1
+  defaultsVersion: 3

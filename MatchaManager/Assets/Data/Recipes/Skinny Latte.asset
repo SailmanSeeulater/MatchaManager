@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a35cd6ef847424c668bb0a4a58a57e96, type: 3}
+  m_Name: Skinny Latte
+  m_EditorClassIdentifier: Assembly-CSharp::DrinkRecipe
+  displayName: Skinny Latte
+  lines:
+  - node: {fileID: 11400000, guid: f1865e49b76e64cb69d403dc61ade7e9, type: 2}
+    portions: 1
+    label: 
+    optional: 0
+  - node: {fileID: 11400000, guid: b8dc2994c0ef14c52a1c9f51d2082583, type: 2}
+    portions: 1
+    label: 
+    optional: 0
+  - node: {fileID: 11400000, guid: 1e3a5fe3e374a40c3b08db328bd345eb, type: 2}
+    portions: 1
+    label: 
+    optional: 0
+  price: 5
+  patienceSeconds: 40
+  defaultsVersion: 3

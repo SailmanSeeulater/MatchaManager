@@ -100,7 +100,7 @@ public class DrinkBrowser : MonoBehaviour
                 slots[i].interactable = true;
                 ShowIcon(i, node.icon);
                 slotLabels[i].text = node.IsIngredient
-                    ? $"{node.displayName.ToUpper()}\n{CostAndStars(node)}"
+                    ? $"{node.displayName.ToUpper()}\n{CostLabel(node)}"
                     : node.displayName.ToUpper();
             }
             else
@@ -114,10 +114,8 @@ public class DrinkBrowser : MonoBehaviour
         pathText.text = PathLabel();
     }
 
-    // "$2 ***": what a portion costs and how good it is (no stars for water and ice)
-    string CostAndStars(DrinkNode node) =>
-        $"<color=#8a2e2c>${cup.CostOf(node)}</color>" +
-        (node.quality > 0 ? $" <color=#b8860b>{new string('*', node.quality)}</color>" : "");
+    // "$2": what a portion costs
+    string CostLabel(DrinkNode node) => $"<color=#8a2e2c>${cup.CostOf(node)}</color>";
 
     void ShowIcon(int slot, Sprite icon)
     {

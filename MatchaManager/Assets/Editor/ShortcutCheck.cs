@@ -49,7 +49,7 @@ public static class ShortcutCheck
         customers.Arrive(new Order(sunday, danish));
         customers.Tick(1);
 
-        Type("2 1 1 2 ESC ESC ESC 4 1 ESC 1 4 1 ESC ESC 3 1");
+        Type("2 1 1 2 ESC ESC ESC 4 2 ESC 1 4 1 ESC ESC 3 1 1");
         Debug.Log($"[Check] cup: {customers.cup.readout.text}");
         Type("A R");
         snacks.Tick(5);

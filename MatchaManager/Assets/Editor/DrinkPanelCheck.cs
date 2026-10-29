@@ -19,11 +19,13 @@ public static class DrinkPanelCheck
         browser.ShowRoot();
         Log("start");
 
-        Click("Flavors"); Click("Tea"); Click("Matcha"); Click("Ceremonial Matcha");
+        Click("Drink Type"); Click("Tea"); Click("Matcha"); Click("Ceremonial Matcha");
         Back(); Back(); Back();
         Click("Misc"); Click("Water"); Back();
         Click("Dairy"); Click("Non-Dairy"); Click("Oat Milk"); Back(); Back();
-        Click("Sweeteners"); Click("Cane Sugar"); Click("Cane Sugar");
+        Click("Sweeteners"); Click("Sugar"); Click("Cane Sugar"); Click("Cane Sugar"); Back();
+        Click("Syrup"); Click("Ube Syrup"); Back(); Back();
+        Click("Toppings"); Click("Foam"); Click("Cheese Foam");
 
         var counts = cup.Counts();
         Debug.Log("[Check] cup = " + string.Join(", ", counts.Select(kv => $"{kv.Key.displayName} x{kv.Value}")));

@@ -101,7 +101,7 @@ public class Order
                     order.requests.Add("EXTRA " + line.Name + (more > 1 ? " x2" : ""));
                     break;
                 case 2:
-                    order.Specify(line);
+                    order.Specify(line, true);
                     order.requests.Add("WITH " + line.Name);
                     break;
             }
@@ -121,12 +121,19 @@ public class Order
     }
 
     // "any milk" -> a random milk (not one another line already asks for, e.g. an ADD)
-    void Specify(Line line)
+    // WITH never names the cheapest choice, so pouring it from habit is the mistake it catches.
+    void Specify(Line line, bool notCheapest = false)
     {
         if (!line.IsAny) return;
         var taken = lines.Where(l => l != line && !l.IsAny).Select(l => l.node).ToList();
         var options = line.node.Ingredients().Where(n => !taken.Contains(n)).ToList();
         if (options.Count == 0) options = line.node.Ingredients().ToList();
+        if (notCheapest && options.Count > 1)
+        {
+            int cheapest = line.node.Ingredients().Min(n => n.cost);
+            var pricier = options.Where(n => n.cost > cheapest).ToList();
+            if (pricier.Count > 0) options = pricier;
+        }
         line.node = options[UnityEngine.Random.Range(0, options.Count)];
         line.label = null;
     }

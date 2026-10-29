@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a35cd6ef847424c668bb0a4a58a57e96, type: 3}
+  m_Name: Ube Latte
+  m_EditorClassIdentifier: Assembly-CSharp::DrinkRecipe
+  displayName: Ube Latte
+  lines:
+  - node: {fileID: 11400000, guid: 2c313b22d3e554af2bf8980e2ba7c3f2, type: 2}
+    portions: 1
+    label: 
+    optional: 0
+  - node: {fileID: 11400000, guid: a7b14211e48d24649bb0db21627e8a53, type: 2}
+    portions: 1
+    label: 
+    optional: 0
+  - node: {fileID: 11400000, guid: 08422272ebff54f27838fd4d85c6e3f8, type: 2}
+    portions: 1
+    label: 
+    optional: 0
+  price: 6
+  patienceSeconds: 40
+  defaultsVersion: 3

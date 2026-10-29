@@ -503,28 +503,45 @@ local SHAPES = {
   sparkle= {"...k....", "..kak...", ".kkakk..", "kaabaak.", ".kkakk..", "..kak...", "...k..k.", ".....kak"},
   more   = {"........", "...k....", "...kk...", "kkkkak..", "kaaaaak.", "kkkkak..", "...kk...", "...k...."},
   dot    = {"........", "........", "..kkkk..", ".kaaabk.", ".kaaabk.", ".kabbbk.", "..kkkk..", "........"},
+  mug    = {"........", "kkkkkk..", "kbbbbkk.", "kwaaak.k", "kwaaak.k", "kaaaakk.", "kaaaak..", ".kkkk..."},
+  kettle = {"..kkkk..", ".k....k.", ".kkkkkkk", "kwaaaakk", "kwaaaak.", "kaaaaabk", "kabbbbbk", ".kkkkkk."},
+  bubbles= {".....kk.", "....kwak", "....kaak", ".kk..kk.", "kwak....", "kaak.k..", ".kk.kak.", ".....k.."},
+  cream  = {"...kk...", "..kwak..", ".kkaakk.", "kwaaaaak", "kkkkkkkk", "kbbbbbbk", ".kbbbbk.", "..kkkk.."},
+  foam   = {"..kk.kk.", ".kwakwak", "kaaaaaak", "kkkkkkkk", "kbbbbbbk", "kbbbbbbk", ".kbbbbk.", "..kkkk.."},
+  coconut= {"........", ".k...k..", "kkkkkkkk", "kaaaaaak", "kbaaaabk", ".kbbbbk.", "..kkkk..", "........"},
+  hex    = {"..kkkk..", ".kaaaak.", "kaakkaak", "kakbbkak", "kakbbkak", "kaakkaak", ".kaaaak.", "..kkkk.."},
+  cookie = {"..kkkk..", ".kaabak.", "kaaaaaak", "kabaaaak", "kaaaabak", "kaaaaaak", ".kabaak.", "..kkkk.."},
 }
+local UBE, UBE_DK = C("a98bd0"), C("7d5ba6")
 local ICONS = {
   -- folders
   {"Dairy", "carton", P.white, P.sky}, {"Non-Dairy", "carton", P.mPale, P.m},
-  {"Flavors", "sparkle", P.yellow, P.orange}, {"Tea", "leaf", P.m, P.mDk}, {"Matcha", "bowl", P.m, P.terracotta},
-  {"Chocolate", "bar", P.wood, P.woodDk}, {"Vanilla", "flower", P.cream, P.yellow}, {"Coffee", "bean", P.woodDk, P.hair},
-  {"Sweeteners", "cube", P.white, P.grayLt}, {"Misc", "box", P.woodLt, P.wood},
+  {"Drink Type", "mug", P.cream, P.wood}, {"Tea", "leaf", P.m, P.mDk}, {"Matcha", "bowl", P.m, P.terracotta},
+  {"Chocolate", "bar", P.wood, P.woodDk}, {"Coffee", "bean", P.woodDk, P.hair},
+  {"Sweeteners", "cube", P.white, P.grayLt}, {"Sugar", "pile", P.white, P.grayLt}, {"Syrup", "bottle", P.orange, P.yellow},
+  {"Misc", "box", P.woodLt, P.wood},
+  {"Toppings", "cream", P.white, P.redLt}, {"Garnish", "sparkle", P.yellow, P.orange}, {"Foam", "foam", P.white, P.grayLt},
   -- dairy
   {"Whole Milk", "carton", P.white, P.sky}, {"Half and Half", "carton", P.white, P.creamDk}, {"Heavy Cream", "carton", P.cream, P.yellow},
   {"Oat Milk", "carton", P.creamDk, P.woodLt}, {"Almond Milk", "carton", P.cream, P.wood}, {"Soy Milk", "carton", P.cream, P.mLt},
   {"Pistachio Milk", "carton", P.mPale, P.mLt},
-  -- flavors
+  -- drink types
   {"Ceremonial Matcha", "pile", P.m, P.mDk}, {"Low-Grade Matcha", "pile", P.mLt, P.gray},
   {"Hojicha", "leaf", P.wood, P.woodDk}, {"Jasmine", "flower", P.white, P.yellow}, {"Earl Gray", "teabag", P.grayLt, P.gray},
   {"Dark Chocolate", "bar", P.woodDk, P.hair}, {"Milk Chocolate", "bar", P.woodLt, P.wood}, {"White Chocolate", "bar", P.cream, P.creamDk},
-  {"Real Vanilla", "pod", P.woodDk, P.hair}, {"Synthetic Vanilla", "bottle", P.cream, P.yellow},
   {"Arabrica", "bean", P.wood, P.woodDk}, {"Robusta", "bean", P.woodDk, P.hair}, {"Decaf", "bean", P.woodLt, P.wood},
+  {"Cold Brew", "bottle", P.woodDk, P.hair},
   -- sweeteners
   {"Cane Sugar", "pile", P.creamDk, P.woodLt}, {"White Sugar", "cube", P.white, P.grayLt}, {"Brown Sugar", "cube", P.woodLt, P.wood},
-  {"Maple Sugar", "maple", P.orange, P.red}, {"Stevia", "leaf", P.mLt, P.m},
+  {"Stevia", "leaf", P.mLt, P.m},
+  {"Maple Syrup", "maple", P.orange, P.red}, {"Vanilla Syrup", "flower", P.cream, P.yellow}, {"Ube Syrup", "bottle", UBE, UBE_DK},
   -- misc
-  {"Water", "drop", P.cyan, P.cyanDk}, {"Ice", "icecube", P.ice, P.cyan},
+  {"Water", "drop", P.cyan, P.cyanDk}, {"Hot Water", "kettle", P.grayLt, P.gray}, {"Cold Water", "drop", P.sky, P.cyan},
+  {"Sparkling Water", "bubbles", P.cyan, P.cyanDk}, {"Ice", "icecube", P.ice, P.cyan},
+  -- toppings
+  {"Coconut Flakes", "coconut", P.white, P.wood}, {"Caramel Honeycomb", "hex", P.yellow, P.orange},
+  {"Caramel Drizzle", "drop", P.orange, P.terraDk}, {"Biscoff Crumbles", "cookie", P.woodLt, P.woodDk},
+  {"Cheese Foam", "foam", P.cream, P.woodLt}, {"Sesame Foam", "foam", P.creamDk, P.wood}, {"Matcha Foam", "foam", P.mLt, P.cream},
   -- browser
   {"_More", "more", P.m, P.mDk}, {"_Default", "dot", P.grayLt, P.gray},
 }

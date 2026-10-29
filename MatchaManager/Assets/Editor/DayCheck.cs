@@ -84,7 +84,7 @@ public static class DayCheck
 
     static void Make()
     {
-        foreach (var name in new[] { "Ceremonial Matcha", "Water", "Oat Milk", "Cane Sugar" })
+        foreach (var name in new[] { "Ceremonial Matcha", "Hot Water", "Oat Milk", "Cane Sugar" })
             cup.Add(browser.root.Ingredients().First(n => n.displayName == name));
     }
 

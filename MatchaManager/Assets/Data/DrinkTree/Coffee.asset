@@ -17,9 +17,12 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 13cf194cac2594ca2857079b0088fd08, type: 2}
   - {fileID: 11400000, guid: 5595efd5567804bf981008aa992fddc8, type: 2}
   - {fileID: 11400000, guid: f1865e49b76e64cb69d403dc61ade7e9, type: 2}
+  - {fileID: 11400000, guid: 2aba4632b6d8d4e45ad7f973882fac1e, type: 2}
   icon: {fileID: 21300000, guid: 54efa3fd171be4325954b822fb6f7f0e, type: 3}
   portion: 1
   unit: 
   cupColor: {r: 1, g: 1, b: 1, a: 1}
   cupPixels: 6
   look: 0
+  cost: 1
+  economyVersion: 0

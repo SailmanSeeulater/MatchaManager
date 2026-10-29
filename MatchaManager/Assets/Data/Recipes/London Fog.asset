@@ -18,7 +18,7 @@ MonoBehaviour:
     portions: 1
     label: 
     optional: 0
-  - node: {fileID: 11400000, guid: 37372eb9e5b294605ac33b3edfd4bba2, type: 2}
+  - node: {fileID: 11400000, guid: fd87a30d76a4640fe877015aecf74f10, type: 2}
     portions: 1
     label: 
     optional: 0
@@ -26,10 +26,10 @@ MonoBehaviour:
     portions: 1
     label: Milk
     optional: 0
-  - node: {fileID: 11400000, guid: a456a0005258c4d7f87e41bbd66aa72a, type: 2}
+  - node: {fileID: 11400000, guid: 1d0dc76c487b449ec836919e206d9bd7, type: 2}
     portions: 1
-    label: Vanilla
+    label: 
     optional: 1
   price: 6
   patienceSeconds: 45
-  defaultsVersion: 1
+  defaultsVersion: 3

@@ -22,3 +22,5 @@ MonoBehaviour:
   cupColor: {r: 1, g: 1, b: 1, a: 1}
   cupPixels: 6
   look: 0
+  cost: 1
+  economyVersion: 0

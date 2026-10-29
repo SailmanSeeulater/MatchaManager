@@ -14,14 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
   displayName: Sweeteners
   children:
-  - {fileID: 11400000, guid: e2918bbb2697d40cda837078ac14c77e, type: 2}
-  - {fileID: 11400000, guid: fd73fb97e7e1a44fba426c2b81c36411, type: 2}
-  - {fileID: 11400000, guid: e3ea6480eb1f3424ca42259cb28b4519, type: 2}
-  - {fileID: 11400000, guid: 2375a6a3485d4487a88be137c6a0e56d, type: 2}
-  - {fileID: 11400000, guid: 1e3a5fe3e374a40c3b08db328bd345eb, type: 2}
+  - {fileID: 11400000, guid: cc43264c3a490497daa4e1c95235f3f0, type: 2}
+  - {fileID: 11400000, guid: 14c826fd0593c410781d2e478248f659, type: 2}
   icon: {fileID: 21300000, guid: 112795128d8e34770ac481bd04b25c3d, type: 3}
   portion: 1
   unit: 
   cupColor: {r: 1, g: 1, b: 1, a: 1}
   cupPixels: 6
   look: 0
+  cost: 1
+  economyVersion: 0

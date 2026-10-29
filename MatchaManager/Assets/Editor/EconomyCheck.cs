@@ -1,11 +1,13 @@
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-// Headless check for cost to operate: default costs and stars, slot labels,
-// coins spent as ingredients are poured (and lost on a dump), snack costs, and
-// how cheap vs premium drinks pay with casual, regular and picky customers.
+// Headless check for cost to operate: default costs, slot labels, coins spent as
+// ingredients are poured (and lost on a dump), snack costs, cheap vs premium
+// drinks (same pay, so cheap is more profit), and WITH orders never naming the
+// cheapest choice.
 // Run: Unity -batchmode -quit -projectPath . -executeMethod EconomyCheck.Run -captureOut out.png
 public static class EconomyCheck
 {
@@ -27,12 +29,12 @@ public static class EconomyCheck
         browser.ShowRoot();
 
         foreach (var n in browser.root.Ingredients())
-            Debug.Log($"[Check] {n.displayName,-18} cost ${n.cost} quality {n.quality}");
+            Debug.Log($"[Check] {n.displayName,-18} cost ${n.cost}");
         var sunday = customers.recipes.First(r => r.displayName == "Sunday Matcha");
         Debug.Log($"[Check] Sunday Matcha lines: {string.Join(", ", new Order(sunday).lines.Select(l => l.Name))}");
 
-        // the matcha folder's buttons show cost and stars
-        foreach (var name in new[] { "Flavors", "Tea", "Matcha" })
+        // the matcha folder's buttons show their cost
+        foreach (var name in new[] { "Drink Type", "Tea", "Matcha" })
             browser.ClickSlot(browser.VisibleEntries().FindIndex(n => n.displayName == name));
         Debug.Log($"[Check] matcha slots: {string.Join(" | ", browser.slotLabels.Take(2).Select(l => l.text.Replace("\n", " ")))}");
         browser.ShowRoot();
@@ -48,30 +50,50 @@ public static class EconomyCheck
         Debug.Log($"[Check] cake onto the tray: coins {coins} -> {customers.Coins}");
         snacks.ClearTray();
 
-        // cheap vs premium for each palate
-        var premium = new[] { "Ceremonial Matcha", "Water", "Pistachio Milk", "Maple Sugar" };
-        var middle = new[] { "Ceremonial Matcha", "Water", "Whole Milk", "Cane Sugar" };
-        var cheap = new[] { "Low-Grade Matcha", "Water", "Soy Milk", "White Sugar" };
-        foreach (int palate in new[] { 1, 2, 3 })
-            foreach (var (label, drink) in new[] { ("premium", premium), ("middle", middle), ("cheap", cheap) })
+        // cheap vs premium: customers pay the same, so the cheap cup keeps more
+        var premium = new[] { "Ceremonial Matcha", "Hot Water", "Pistachio Milk", "Maple Syrup" };
+        var middle = new[] { "Ceremonial Matcha", "Hot Water", "Whole Milk", "Cane Sugar" };
+        var cheap = new[] { "Low-Grade Matcha", "Hot Water", "Soy Milk", "White Sugar" };
+        foreach (var (label, drink) in new[] { ("premium", premium), ("middle", middle), ("cheap", cheap) })
+        {
+            var p = customers.Arrive(new Order(sunday));
+            customers.Tick(1);
+            int before = customers.Coins;
+            int spentBefore = customers.Today.spent;
+            Add(drink);
+            if (label == "cheap")
             {
-                var p = customers.Arrive(new Order(sunday), false, palate);
-                customers.Tick(1);
-                int before = customers.Coins;
-                int spentBefore = customers.Today.spent;
-                Add(drink);
-                if (label == "cheap" && palate == 3)
-                {
-                    customers.Select(p.spot);
-                    Debug.Log($"[Check] recipe for a picky customer with a cheap cup: {customers.recipePanel.title.text} :: {customers.recipePanel.body.text.Replace("\n", " / ")}");
-                    MatchaSceneBuilder.Capture(MatchaSceneBuilder.Arg("-captureOut") ?? "EconomyCheck.png");
-                }
-                int cost = customers.Today.spent - spentBefore;
-                cup.Serve();
-                int profit = customers.Coins - before;
-                Debug.Log($"[Check] palate {palate} {label,-7}: cost {cost}, paid {profit + cost}, profit {profit} '{customers.LastReaction?.Replace("\n", " ")}'");
-                for (int t = 0; t < 10 && !customers.IsEmpty; t++) customers.Tick(5);
+                customers.Select(p.spot);
+                Debug.Log($"[Check] recipe with a cheap cup: {customers.recipePanel.title.text} :: {customers.recipePanel.body.text.Replace("\n", " / ")}");
+                MatchaSceneBuilder.Capture(MatchaSceneBuilder.Arg("-captureOut") ?? "EconomyCheck.png");
             }
+            int cost = customers.Today.spent - spentBefore;
+            cup.Serve();
+            int profit = customers.Coins - before;
+            Debug.Log($"[Check] {label,-7}: cost {cost}, paid {profit + cost}, profit {profit} '{customers.LastReaction?.Replace("\n", " ")}'");
+            for (int t = 0; t < 10 && !customers.IsEmpty; t++) customers.Tick(5);
+        }
+
+        // WITH asks for a particular choice, never the cheapest: habit pours the wrong one
+        var hard = AssetDatabase.LoadAssetAtPath<Balance>("Assets/Data/Balance Hard.asset");
+        var addable = browser.root.Ingredients().Where(n => n.cupPixels <= hard.addMaxPixels).ToList();
+        int withs = 0, cheapest = 0;
+        var examples = new List<string>();
+        for (int i = 0; i < 400; i++)
+        {
+            var recipe = customers.recipes[i % customers.recipes.Count];
+            var order = Order.Random(recipe, new Snack[0], hard, 10, addable);
+            for (int l = 0; l < recipe.lines.Count; l++)
+            {
+                var folder = recipe.lines[l].node;
+                if (folder.IsIngredient || order.lines[l].node == folder || order.lines[l].removed) continue;
+                if (!order.requests.Contains("WITH " + order.lines[l].Name)) continue;
+                withs++;
+                if (order.lines[l].node.cost == folder.Ingredients().Min(n => n.cost)) cheapest++;
+                if (examples.Count < 4) examples.Add($"{recipe.displayName}: WITH {order.lines[l].Name} (${order.lines[l].node.cost}, cheapest ${folder.Ingredients().Min(n => n.cost)})");
+            }
+        }
+        Debug.Log($"[Check] WITH changes: {withs}, naming the cheapest choice: {cheapest}; e.g. {string.Join(" | ", examples)}");
     }
 
     static void Add(params string[] names)

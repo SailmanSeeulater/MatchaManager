@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a35cd6ef847424c668bb0a4a58a57e96, type: 3}
+  m_Name: Cheese Foam Tea
+  m_EditorClassIdentifier: Assembly-CSharp::DrinkRecipe
+  displayName: Cheese Foam Tea
+  lines:
+  - node: {fileID: 11400000, guid: 64cf6bbb4245442b28b1632fedd4ca06, type: 2}
+    portions: 1
+    label: 
+    optional: 0
+  - node: {fileID: 11400000, guid: 4b8d972e3cea34c0094068ceb3a80b0c, type: 2}
+    portions: 1
+    label: 
+    optional: 0
+  - node: {fileID: 11400000, guid: 08422272ebff54f27838fd4d85c6e3f8, type: 2}
+    portions: 1
+    label: 
+    optional: 0
+  - node: {fileID: 11400000, guid: 3a764fed177ff435891e7946e3d32e75, type: 2}
+    portions: 1
+    label: 
+    optional: 0
+  price: 7
+  patienceSeconds: 45
+  defaultsVersion: 3

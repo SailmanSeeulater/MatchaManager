@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f470038767344e74a85d0859c14d463, type: 3}
+  m_Name: Sugar
+  m_EditorClassIdentifier: Assembly-CSharp::DrinkNode
+  displayName: Sugar
+  children:
+  - {fileID: 11400000, guid: e2918bbb2697d40cda837078ac14c77e, type: 2}
+  - {fileID: 11400000, guid: fd73fb97e7e1a44fba426c2b81c36411, type: 2}
+  - {fileID: 11400000, guid: e3ea6480eb1f3424ca42259cb28b4519, type: 2}
+  - {fileID: 11400000, guid: 1e3a5fe3e374a40c3b08db328bd345eb, type: 2}
+  icon: {fileID: 21300000, guid: 5ff9104c1823f49baa7b24c4632703fb, type: 3}
+  portion: 1
+  unit: 
+  cupColor: {r: 1, g: 1, b: 1, a: 1}
+  cupPixels: 6
+  look: 0
+  cost: 1
+  economyVersion: 0

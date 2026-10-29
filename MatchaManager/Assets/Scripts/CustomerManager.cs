@@ -20,9 +20,9 @@ using Random = UnityEngine.Random;
 //   hidden. Click their ticket (or G) to ask: 3 guess bubbles appear. A right guess
 //   reveals the order; a wrong one costs everyone waiting some patience. Making the
 //   right drink without asking earns a bonus.
-// - Ingredients and snacks cost coins as you use them. Each customer has a palate
-//   (1-3 stars); every ingredient below it shrinks the tip, and picky customers tip
-//   more when you meet their standard. Cheap is fine for casual customers.
+// - Ingredients and snacks cost coins as you use them. Customers can't taste the
+//   difference, so on ANY lines the cheapest choice is the most profit, unless the
+//   order asks for a particular one ("WITH CEREMONIAL MATCHA").
 // DayCycle closes the door at the end of the day and resets the daily stats.
 public class CustomerManager : MonoBehaviour
 {
@@ -47,7 +47,6 @@ public class CustomerManager : MonoBehaviour
         public float ticketTime;   // when they ordered (oldest gets served first)
         public List<DrinkRecipe> guesses;              // unclear orders: the 3 names to pick from
         public HashSet<int> wrongGuesses = new HashSet<int>();
-        public int palate = 2;   // 1 = anything goes, 3 = only the good stuff
     }
 
     [Serializable]
@@ -244,14 +243,7 @@ public class CustomerManager : MonoBehaviour
             look = looks != null && looks.Length > 0 ? looks[Random.Range(0, looks.Length)] : null,
         };
         if (Random.value < balance.UnclearChance(day)) MakeUnclear(p);
-        p.palate = RandomPalate();
         return p;
-    }
-
-    int RandomPalate()
-    {
-        float roll = Random.value;
-        return roll < balance.casualChance ? 1 : roll < balance.casualChance + balance.ConnoisseurChance(day) ? 3 : 2;
     }
 
     // Ingredients and snacks are paid for as they're used.
@@ -263,11 +255,6 @@ public class CustomerManager : MonoBehaviour
         RefreshStatus();
     }
 
-    // Different ingredients in the drink (with a quality) that are below this customer's palate.
-    public static int CheapCount(Dictionary<DrinkNode, int> drink, int palate) =>
-        drink.Keys.Count(n => n.quality > 0 && n.quality < palate);
-
-    static string Stars(int n) => $"<color=#b8860b>{new string('*', n)}</color>";
 
     // Only part of the name: a word the drink shares with other drinks, so it really is unclear
     // ("??? MATCHA" could be Sunday Matcha, Iced Matcha or Matcha Latte). Drinks with no shared
@@ -308,7 +295,7 @@ public class CustomerManager : MonoBehaviour
             atCounter.stage = Stage.Ordering;
             atCounter.timer = 0;
             ShowLook(customer.GetComponent<Image>(), atCounter.look);
-            orderText.text = OrderLines(atCounter.order) + "\n" + Stars(atCounter.palate);
+            orderText.text = OrderLines(atCounter.order);
             RefreshLine();
             RefreshRecipe();
             return;
@@ -361,11 +348,11 @@ public class CustomerManager : MonoBehaviour
     int FreeSpot() => Array.IndexOf(waiting, null);
 
     // Puts someone straight at pickup with full patience (used by the headless checks).
-    public Patron Arrive(Order order, bool unclear = false, int palate = 2)
+    public Patron Arrive(Order order, bool unclear = false)
     {
         int spot = FreeSpot();
         if (spot < 0) return null;
-        var p = new Patron { order = order, palate = palate, look = looks != null && looks.Length > 0 ? looks[0] : null };
+        var p = new Patron { order = order, look = looks != null && looks.Length > 0 ? looks[0] : null };
         if (unclear) MakeUnclear(p);
         TakeOrder(p, spot);
         return p;
@@ -457,11 +444,8 @@ public class CustomerManager : MonoBehaviour
             SoundFX.Play(Sfx.ServeBad);
             return true;
         }
-        // the tip depends on patience and palate; each ingredient below their palate takes a share of it
-        int cheap = CheapCount(drink, p.palate);
-        float palateTip = p.palate >= 3 ? balance.palateTip.z : p.palate == 2 ? balance.palateTip.y : balance.palateTip.x;
-        float quality = Mathf.Max(0, 1 - balance.cheapTipPenalty * cheap);
-        int paid = p.order.Price + Mathf.RoundToInt(p.order.Price * p.patience * balance.tipMultiplier * palateTip * quality);
+        // the tip depends on patience only: nobody can taste which grade went in
+        int paid = p.order.Price + Mathf.RoundToInt(p.order.Price * p.patience * balance.tipMultiplier);
         // made an unclear order right without asking
         bool guessed = p.order.unclear;
         if (guessed) paid += Mathf.RoundToInt(p.order.Price * balance.guessBonus);
@@ -469,8 +453,6 @@ public class CustomerManager : MonoBehaviour
         Today.happy++;
         Today.earned += paid;
         string cheer = guessed ? "GOOD GUESS!"
-            : cheap > 0 ? (p.palate >= 3 ? "HMM. CHEAP." : "TASTES CHEAP...")
-            : p.palate >= 3 && p.patience > 0.6f ? "EXQUISITE!"
             : p.patience > 0.6f ? "PERFECT!" : "FINALLY...";
         React(p, $"{cheer}\n<color=#2e5222>+{paid}</color>", "1e1a2b");
         SoundFX.Play(Sfx.ServeGood);
@@ -656,7 +638,7 @@ public class CustomerManager : MonoBehaviour
         string others = WaitingCount > 1 ? $" <color=#8a7a5a>{WaitingPatrons.Count(w => w.spot < p.spot) + 1}/{WaitingCount}</color>" : "";
         if (order.unclear)
         {
-            recipePanel.SetOrder($"#{p.spot + 1} {order.clue} {Stars(p.palate)}{others}",
+            recipePanel.SetOrder($"#{p.spot + 1} {order.clue}{others}",
                 "THEY MUMBLED THE NAME.\nCLICK THEIR TICKET OR PRESS G\nTO ASK WHICH DRINK IT IS,\nOR MAKE YOUR BEST GUESS\n<color=#2e5222>(RIGHT GUESS = BONUS)</color>", 5);
             return;
         }
@@ -667,16 +649,13 @@ public class CustomerManager : MonoBehaviour
             var line = order.lines[i];
             if (line.removed) { rows.Add($"[-] <s>{line.Name}</s> NONE"); continue; }
             string count = result.have[i] > 0 && !result.lineOk[i] ? $" ({result.have[i]}/{line.portions})" : "";
-            // ingredients in the cup for this line that are below the customer's palate
-            bool cheapHere = line.node.Ingredients().Any(n => cup.Counts().ContainsKey(n) && n.quality > 0 && n.quality < p.palate);
-            rows.Add($"[{(result.lineOk[i] ? "x" : " ")}] {line.Name} {line.Amount}{count}" +
-                     (cheapHere ? " <color=#8a2e2c>(CHEAP)</color>" : ""));
+            rows.Add($"[{(result.lineOk[i] ? "x" : " ")}] {line.Name} {line.Amount}{count}");
         }
         if (order.snack != null) rows.Add(SnackRow(order));
         if (result.extras.Count > 0)
             rows.Add("<color=#8a2e2c>[!] NOT ORDERED: " +
                      string.Join(", ", result.extras.Select(n => n.displayName.ToUpper())) + "</color>");
-        recipePanel.SetOrder($"#{p.spot + 1} {order.recipe.displayName.ToUpper()} {Stars(p.palate)}{others}", string.Join("\n", rows), rows.Count);
+        recipePanel.SetOrder($"#{p.spot + 1} {order.recipe.displayName.ToUpper()}{others}", string.Join("\n", rows), rows.Count);
     }
 
     IList<Snack> Menu => snacks != null ? snacks.Menu : new Snack[0];
