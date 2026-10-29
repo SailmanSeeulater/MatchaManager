@@ -52,7 +52,8 @@ Run **Build Scene** again after changing art, recipes or code that the scene bui
 | **1–5** | Drink slots. A number that pours an ingredient jumps back to HOME |
 | **SHIFT+1–9** | Jump to that line of the recipe checklist: open an ANY or WITH line's folder, pour a named ingredient, or pick up the order's snack |
 | **Z** | Pour the last ingredient again |
-| **ESC / BACKSPACE / P** | Back up a folder (and close the guess bubbles) |
+| **BACKSPACE / P** | Back up a folder (and close the guess bubbles) |
+| **ESC** | Pause: **1** resume, **2** settings, **3** quit to title. On the settings page: **1–2** music, **3–4** sound, **5** fullscreen, **6** key hints |
 | **SPACE / ENTER** | Serve |
 | **X** | Dump the cup (costs every waiting customer some patience) |
 | **Q W E** | Cold snacks |
@@ -62,10 +63,22 @@ Run **Build Scene** again after changing art, recipes or code that the scene bui
 | **← →** | Switch which customer the notebook shows |
 | **G**, then **1–3** | Ask a mumbling customer, then pick a guess |
 | **TAB** | Switch MENU / RECIPE |
-| **M** | Mute |
+| **M** | Mute everything |
 | **F1** | Hide / show key hints |
 
-On the title screen, **ENTER** continues or starts a game and **N** starts a new game. Pick the difficulty with **1 2 3** or **E M H**.
+On the title screen, **ENTER** continues or starts a game, **N** starts a new game and **S** opens the settings. Pick the difficulty with **1 2 3** or **E M H**.
+
+## Pause and settings
+
+**ESC** during the day stops the clock, the customers and the snacks. From the pause menu you can resume, open the settings, or quit to the title (two clicks, because quitting replays the day from its start). A built game also pauses itself when you switch to another window.
+
+The settings are also on the title screen:
+- music volume
+- sound volume
+- fullscreen (only applies in a built game)
+- key hints
+
+They're kept in PlayerPrefs, separate from the save, so a new game keeps them.
 
 ## Drinks
 
@@ -139,6 +152,21 @@ python3 MatchaManager/Tools/make_sfx.py
 
 This writes one WAV per `Sfx` entry into `Assets/Audio`.
 
+## Music
+
+Drop tracks into `MatchaManager/Assets/Audio/Music/`, then run **Build Scene**. The file name decides where a track plays:
+
+| Name starts with | Plays | Example |
+|---|---|---|
+| `Title` | title screen | `Title.ogg` |
+| `Shop` | while the shop is open | `Shop 1 - Morning.ogg`, `Shop 2 - Rush.ogg` |
+| `Summary` | end-of-day summary | `Summary.ogg` |
+
+- A single track loops. Several Shop tracks play one after another, in name order.
+- Switching between screens crossfades, and the music turns down while paused.
+- Any format Unity reads works (.ogg, .mp3, .wav). Music imports as streamed Vorbis.
+- The fade time and volumes are on the **Music** object's `MusicPlayer`. Build Scene rebuilds the scene, though, so for lasting changes edit the defaults in `MusicPlayer.cs`.
+
 ## Tuning
 
 Everything that makes the game easier or harder is in the Inspector. **Build Scene** fills in defaults once and then leaves your edits alone.
@@ -186,3 +214,4 @@ Each check opens the scene in batch mode, plays through one feature, logs `[Chec
 | `AmbiguityCheck` | mumbled orders, guessing, the peek and its bonus |
 | `DrinkSpriteCheck` | finished-drink sprites, overlapping recipes, switching customers |
 | `SoundCheck` | every sound has a clip |
+| `SettingsCheck` | pause, settings, quit to title, which music plays where |

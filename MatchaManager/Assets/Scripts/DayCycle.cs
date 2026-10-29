@@ -101,6 +101,19 @@ public class DayCycle : MonoBehaviour
         if (!IsOpen && customers.IsEmpty) EndDay();
     }
 
+    // QUIT TO TITLE: the shop closes and everyone goes home. The save still holds this day's
+    // start, so CONTINUE replays it.
+    public void CloseShop()
+    {
+        Running = false;
+        Ended = false;
+        customers.open = false;
+        summary.SetActive(false);
+        cup.Clear();
+        if (snacks != null) snacks.ResetAll();
+        customers.StartDay();
+    }
+
     public void NextDay()
     {
         Day++;

@@ -19,6 +19,7 @@ public static class MatchaSceneBuilder
     const string ScenePath = "Assets/Scenes/Main.unity";
     const string SnackDir = "Assets/Data/Snacks";
     const string AudioDir = "Assets/Audio";
+    public const string MusicDir = "Assets/Audio/Music";
     const string IconDir = "Assets/Art/Icons";
     const string DrinkArtDir = "Assets/Art/Drinks";
     const int RefWidth = 480, RefHeight = 270;
@@ -400,6 +401,8 @@ public static class MatchaSceneBuilder
         var continueInfo = AddText(continueRt, "Info", 0, 17, 140, 9, "DAY 1  -  0 COINS", Px, Cream, TextAlignmentOptions.Center);
         var newGameButton = AddRectButton(mainPage, "NewGameButton", 170, 186, 140, 20, Hex("e0d2b2"));
         var newGameLabel = AddText((RectTransform)newGameButton.transform, "Label", 0, 0, 140, 20, "NEW GAME", Px2, Ink, TextAlignmentOptions.Center);
+        var titleSettings = AddTextButton(mainPage, "SettingsButton", 170, 211, 140, 9, "SETTINGS");
+        ((TMP_Text)titleSettings.targetGraphic).alignment = TextAlignmentOptions.Center;
         var title = titleRoot.gameObject.AddComponent<TitleScreen>();
         title.day = day;
         title.continueButton = continueButton;
@@ -424,7 +427,71 @@ public static class MatchaSceneBuilder
         title.difficultyPage = difficultyPage.gameObject;
         title.difficultyButtons = difficultyButtons;
         title.backButton = backButton;
+        title.settingsButton = titleSettings;
         day.title = title;
+
+        // --- Pause and settings (above everything, even the title, which opens the settings page too) ---
+        var pauseRoot = AddRect(screen, "PauseMenu", 0, 0, RefWidth, RefHeight, new Color(0.06f, 0.05f, 0.1f, 0.7f));
+        pauseRoot.GetComponent<Image>().raycastTarget = true;
+        AddRect(pauseRoot, "Border", 150, 58, 180, 136, Ink);
+        AddRect(pauseRoot, "Paper", 152, 60, 176, 132, Cream);
+        var pause = pauseRoot.gameObject.AddComponent<PauseMenu>();
+        var buttonTan = Hex("e0d2b2");
+        Button BigButton(RectTransform parent, string name, float y, string text, Color color, Color textColor, out TMP_Text label)
+        {
+            var b = AddRectButton(parent, name, 170, y, 140, 18, color);
+            label = AddText((RectTransform)b.transform, "Label", 0, 0, 140, 18, text, Px2, textColor, TextAlignmentOptions.Center);
+            return b;
+        }
+        Button SmallButton(RectTransform parent, string name, float x, float y, float w, string text, out TMP_Text label)
+        {
+            var b = AddRectButton(parent, name, x, y, w, 10, buttonTan);
+            label = AddText((RectTransform)b.transform, "Label", 0, 1, w, 9, text, Px, Ink, TextAlignmentOptions.Center);
+            return b;
+        }
+        var pausePage = Group(pauseRoot, "PausePage");
+        AddText(pausePage, "Title", 152, 66, 176, 14, "PAUSED", Px2, MatchaDark, TextAlignmentOptions.Center);
+        pause.pausePage = pausePage.gameObject;
+        pause.resumeButton = BigButton(pausePage, "ResumeButton", 88, "RESUME", Hex("6fa04a"), Cream, out _);
+        pause.settingsButton = BigButton(pausePage, "SettingsButton", 112, "SETTINGS", buttonTan, Ink, out _);
+        pause.quitButton = BigButton(pausePage, "QuitButton", 136, "QUIT TO TITLE", buttonTan, Ink, out pause.quitLabel);
+        AddText(pausePage, "Note", 152, 162, 176, 20, "QUITTING REPLAYS TODAY\nFROM ITS START", Px, Hex("8a7a5a"), TextAlignmentOptions.Center);
+        var settingsPage = Group(pauseRoot, "SettingsPage");
+        AddText(settingsPage, "Title", 152, 66, 176, 14, "SETTINGS", Px2, MatchaDark, TextAlignmentOptions.Center);
+        pause.settingsPage = settingsPage.gameObject;
+        const float rowMusic = 88, rowSound = 104, rowFullscreen = 120, rowHints = 136;
+        Image[] VolumeRow(string name, float y, out Button down, out Button up)
+        {
+            AddText(settingsPage, name + "Label", 164, y + 1, 48, 9, name.ToUpper(), Px, Ink, TextAlignmentOptions.Left);
+            down = SmallButton(settingsPage, name + "Down", 214, y, 10, "-", out _);
+            var bars = new Image[10];
+            for (int i = 0; i < bars.Length; i++)
+                bars[i] = AddRect(settingsPage, name + "Bar" + i, 227 + i * 6, y + 1, 5, 8, Color.white).GetComponent<Image>();
+            up = SmallButton(settingsPage, name + "Up", 289, y, 10, "+", out _);
+            return bars;
+        }
+        pause.musicBars = VolumeRow("Music", rowMusic, out pause.musicDown, out pause.musicUp);
+        pause.soundBars = VolumeRow("Sound", rowSound, out pause.soundDown, out pause.soundUp);
+        AddText(settingsPage, "FullscreenLabel", 164, rowFullscreen + 1, 48, 9, "FULLSCREEN", Px, Ink, TextAlignmentOptions.Left);
+        pause.fullscreenButton = SmallButton(settingsPage, "FullscreenButton", 214, rowFullscreen, 85, "ON", out pause.fullscreenLabel);
+        AddText(settingsPage, "HintsLabel", 164, rowHints + 1, 48, 9, "KEY HINTS", Px, Ink, TextAlignmentOptions.Left);
+        pause.hintsButton = SmallButton(settingsPage, "HintsButton", 214, rowHints, 85, "ON", out pause.hintsLabel);
+        pause.backButton = AddTextButton(settingsPage, "Back", 170, 170, 40, 9, "< BACK");
+        settingsPage.gameObject.SetActive(false);
+        pauseRoot.gameObject.SetActive(false);
+        pause.day = day;
+        pause.title = title;
+        title.settings = pause;
+
+        // --- Music: tracks from Assets/Audio/Music named Title..., Shop..., Summary... ---
+        var music = new GameObject("Music").AddComponent<MusicPlayer>();
+        music.titleTracks = MusicTracks("Title");
+        music.shopTracks = MusicTracks("Shop");
+        music.summaryTracks = MusicTracks("Summary");
+        music.title = title;
+        music.day = day;
+        music.pause = pause;
+        Debug.Log($"[Matcha] Music: {music.titleTracks.Length} title, {music.shopTracks.Length} shop, {music.summaryTracks.Length} summary track(s) from {MusicDir}");
 
         // --- Sound ---
         var sound = new GameObject("SoundFX").AddComponent<SoundFX>();
@@ -440,7 +507,9 @@ public static class MatchaSceneBuilder
         sound.clickButtons = new[]
         {
             back.GetComponent<Button>(), tabMenu.GetComponent<Button>(), tabRecipe.GetComponent<Button>(), titleButton,
-            nextDayButton, continueButton, newGameButton,
+            nextDayButton, continueButton, newGameButton, titleSettings,
+            pause.resumeButton, pause.settingsButton, pause.quitButton, pause.musicDown, pause.musicUp,
+            pause.soundDown, pause.soundUp, pause.fullscreenButton, pause.hintsButton, pause.backButton,
         }.Concat(drinkRows).Concat(snackRows).ToArray();
 
         // --- Keyboard shortcuts + the key letters drawn on each button ---
@@ -463,8 +532,8 @@ public static class MatchaSceneBuilder
             Bind(Key.Digit1 + i, Key.Numpad1 + i, (RectTransform)slots[i].transform);
             Hint((RectTransform)slots[i].transform, 5, 13, (i + 1).ToString(), dimInk); // under the icon
         }
-        Bind(Key.Backspace, Key.Escape, back, Key.P);
-        HintRight(back, rects["Back_Button"].w - 4, 2, "ESC/P", dimInk);
+        Bind(Key.Backspace, Key.P, back);
+        HintRight(back, rects["Back_Button"].w - 4, 2, "BKSP/P", dimInk);
         Bind(Key.Space, Key.Enter, serve);
         var serveRect = rects["Serve_Button"];
         Hint(drink, serveRect.x + serveRect.w / 2f - 10, 119, "SPACE", dimInk); // just above the SERVE label
@@ -491,12 +560,26 @@ public static class MatchaSceneBuilder
         Hint(recipe, 411, 174, "SHIFT+1-9", dimCream); // jump to a checklist line (the grey numbers)
         HintRight(continueRt, 137, 2, "ENTER", dimCream);
         HintRight((RectTransform)newGameButton.transform, 137, 2, "N", dimInk);
+        HintRight((RectTransform)titleSettings.transform, 137, 1, "S", dimInk);
+        HintRight((RectTransform)pause.resumeButton.transform, 137, 1, "1/ESC", dimCream);
+        HintRight((RectTransform)pause.settingsButton.transform, 137, 1, "2", dimInk);
+        HintRight((RectTransform)pause.quitButton.transform, 137, 1, "3", dimInk);
+        foreach (var (row, a, b) in new[] { (rowMusic, "1", "2"), (rowSound, "3", "4") })
+        {
+            Hint(settingsPage, 208, row + 2, a, dimInk);
+            Hint(settingsPage, 301, row + 2, b, dimInk);
+        }
+        Hint(settingsPage, 301, rowFullscreen + 2, "5", dimInk);
+        Hint(settingsPage, 301, rowHints + 2, "6", dimInk);
+        Hint(settingsPage, 212, 171, "ESC", dimInk);
         HintRight((RectTransform)nextDayButton.transform, 97, 2, "ENTER", dimCream);
 
         keys.game = bindings.ToArray();
         keys.recipePanel = panel;
         keys.customers = customers;
         keys.browser = browser;
+        keys.pause = pause;
+        pause.keys = keys;
         keys.title = title;
         keys.continueButton = continueButton;
         keys.newGameButton = newGameButton;
@@ -605,6 +688,18 @@ public static class MatchaSceneBuilder
         btn.colors = colors;
         btn.navigation = new Navigation { mode = Navigation.Mode.None };
         return btn;
+    }
+
+    // Music files in Assets/Audio/Music whose names start with the given word, in name order.
+    static AudioClip[] MusicTracks(string prefix)
+    {
+        if (!AssetDatabase.IsValidFolder(MusicDir)) return new AudioClip[0];
+        return AssetDatabase.FindAssets("t:AudioClip", new[] { MusicDir })
+            .Select(AssetDatabase.GUIDToAssetPath)
+            .Where(path => Path.GetFileName(path).StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(path => path)
+            .Select(AssetDatabase.LoadAssetAtPath<AudioClip>)
+            .ToArray();
     }
 
     // Each recipe's finished-drink picture: Assets/Art/Drinks/<name>.png, or a plain cup for recipes

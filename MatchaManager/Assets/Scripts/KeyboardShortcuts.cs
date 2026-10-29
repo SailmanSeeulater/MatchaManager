@@ -6,7 +6,9 @@ using UnityEngine.UI;
 
 // Keys that press on-screen buttons, laid out like the screen itself:
 //   1-5        drink slots (top to bottom); pouring with a number goes back HOME
-//   ESC / BACKSPACE / P  back up a folder       Z                pour the last ingredient again
+//   BACKSPACE / P  back up a folder             Z                pour the last ingredient again
+//   ESC        pause (RESUME / SETTINGS / QUIT TO TITLE as 1 / 2 / 3; on the settings page
+//              1-2 music, 3-4 sound, 5 fullscreen, 6 key hints; ESC goes back)
 //   SHIFT+1-9  jump to that line of the recipe checklist: opens an ANY line's folder (or a
 //              WITH line's), pours a named ingredient, or picks the order's snack
 //   SPACE      serve                            X                pour the cup out
@@ -15,9 +17,9 @@ using UnityEngine.UI;
 //   LEFT / RIGHT  switch which waiting customer's ticket the recipe panel shows
 //   G          ask an unclear customer what they meant; then 1 / 2 / 3 picks a guess
 //              and ESC / BACKSPACE / P closes the guesses
-// On the title: ENTER = continue (or new game without a save), N = new game;
+// On the title: ENTER = continue (or new game without a save), N = new game, S = settings;
 // then 1 / 2 / 3 (or E / M / H) picks easy / medium / hard, ESC goes back.
-// On the summary: ENTER or SPACE = next day. F1 hides or shows the key hints.
+// On the summary: ENTER or SPACE = next day. F1 hides or shows the key hints (saved in the settings).
 // A key "presses" its button like a mouse click would (with the pressed flash),
 // and does nothing while that button is greyed out.
 public class KeyboardShortcuts : MonoBehaviour
@@ -36,6 +38,7 @@ public class KeyboardShortcuts : MonoBehaviour
     public RecipePanel recipePanel;
     public CustomerManager customers;
     public DrinkBrowser browser;
+    public PauseMenu pause;
 
     static readonly Key[] Digits = { Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5, Key.Digit6, Key.Digit7, Key.Digit8, Key.Digit9 };
     static readonly Key[] Numpad = { Key.Numpad1, Key.Numpad2, Key.Numpad3, Key.Numpad4, Key.Numpad5, Key.Numpad6, Key.Numpad7, Key.Numpad8, Key.Numpad9 };
@@ -50,13 +53,45 @@ public class KeyboardShortcuts : MonoBehaviour
     [Tooltip("The little key letters drawn on the buttons")]
     public GameObject[] hints;
 
+    void Start()
+    {
+        GameSettings.Load();
+        ShowHints(GameSettings.KeyHints);
+    }
+
+    public void ShowHints(bool show)
+    {
+        foreach (var h in hints) if (h != null) h.SetActive(show);
+    }
+
     void Update()
     {
         var kb = Keyboard.current;
         if (kb == null) return;
 
         if (kb.f1Key.wasPressedThisFrame)
-            foreach (var h in hints) h.SetActive(!h.activeSelf);
+        {
+            GameSettings.SetKeyHints(!GameSettings.KeyHints);
+            ShowHints(GameSettings.KeyHints);
+        }
+
+        // the pause / settings overlay sits over everything and takes the keys while it's up
+        if (pause != null && pause.Showing)
+        {
+            if (kb.escapeKey.wasPressedThisFrame) pause.Back();
+            else if (pause.InSettings)
+            {
+                Button[] page = { pause.musicDown, pause.musicUp, pause.soundDown, pause.soundUp, pause.fullscreenButton, pause.hintsButton };
+                for (int i = 0; i < page.Length; i++) if (Pressed(kb, Digits[i], Numpad[i])) Press(page[i]);
+                if (kb.backspaceKey.wasPressedThisFrame) pause.Back();
+            }
+            else
+            {
+                Button[] page = { pause.resumeButton, pause.settingsButton, pause.quitButton };
+                for (int i = 0; i < page.Length; i++) if (Pressed(kb, Digits[i], Numpad[i])) Press(page[i]);
+            }
+            return;
+        }
 
         if (title != null && title.Showing)
         {
@@ -71,6 +106,7 @@ public class KeyboardShortcuts : MonoBehaviour
             if (Pressed(kb, Key.Enter, Key.NumpadEnter))
                 Press(continueButton.interactable ? continueButton : newGameButton);
             if (kb.nKey.wasPressedThisFrame) Press(newGameButton);
+            if (kb.sKey.wasPressedThisFrame) Press(title.settingsButton);
             return;
         }
         if (summary != null && summary.activeSelf)
@@ -90,6 +126,11 @@ public class KeyboardShortcuts : MonoBehaviour
             return;
         }
         if (customers != null && kb.gKey.wasPressedThisFrame) customers.OpenGuess();
+        if (pause != null && kb.escapeKey.wasPressedThisFrame)
+        {
+            pause.Pause();
+            return;
+        }
 
         bool shift = kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed;
         if (shift)

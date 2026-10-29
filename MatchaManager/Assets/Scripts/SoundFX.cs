@@ -7,7 +7,7 @@ using UnityEngine.UI;
 // Every sound effect in the game. Clip files live in Assets/Audio/<Sfx name>.wav
 // (made by Tools/make_sfx.py). Gameplay code calls SoundFX.Play(Sfx.X); it does
 // nothing outside Play mode, so the headless checks stay silent.
-// Press M to mute or unmute.
+// Press M to mute or unmute everything; the settings page sets the sound volume.
 public enum Sfx { Click, Pour, CupFull, Dump, ServeGood, ServeBad, Arrive, WalkOut, Pick, Tray, HeatStart, Ready, Burnt, DayEnd, DayStart, Order, Finished }
 
 public class SoundFX : MonoBehaviour
@@ -72,6 +72,6 @@ public class SoundFX : MonoBehaviour
         var voice = voices[nextVoice];
         nextVoice = (nextVoice + 1) % Voices;
         voice.pitch = 1 + UnityEngine.Random.Range(-e.pitchJitter, e.pitchJitter);
-        voice.PlayOneShot(e.clip, e.volume * masterVolume);
+        voice.PlayOneShot(e.clip, e.volume * masterVolume * GameSettings.SoundVolume);
     }
 }

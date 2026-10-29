@@ -6,6 +6,7 @@ using UnityEngine.UI;
 // which day, how many coins, and the difficulty). NEW GAME opens the difficulty
 // page: EASY / MEDIUM / HARD start day 1, BACK returns. If there's a save,
 // NEW GAME asks for a second click first so it can't be wiped by accident.
+// SETTINGS opens the settings page (volumes, fullscreen, key hints).
 public class TitleScreen : MonoBehaviour
 {
     public DayCycle day;
@@ -16,6 +17,8 @@ public class TitleScreen : MonoBehaviour
     public TMP_Text continueInfo;
     public Button newGameButton;
     public TMP_Text newGameLabel;
+    public Button settingsButton;
+    public PauseMenu settings;
 
     [Header("Difficulty page")]
     public GameObject difficultyPage;
@@ -35,6 +38,7 @@ public class TitleScreen : MonoBehaviour
     {
         continueButton.onClick.AddListener(Continue);
         newGameButton.onClick.AddListener(NewGame);
+        if (settingsButton != null) settingsButton.onClick.AddListener(() => settings.OpenFromTitle());
         for (int i = 0; i < difficultyButtons.Length; i++)
         {
             int difficulty = i;
