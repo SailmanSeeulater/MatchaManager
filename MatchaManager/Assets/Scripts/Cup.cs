@@ -106,11 +106,11 @@ public class Cup : MonoBehaviour
         Changed?.Invoke();
     }
 
-    // e.g. "CEREMONIAL MATCHA\nCANE SUGAR x2", in the order things were first added
+    // e.g. "CEREMONIAL MATCHA, CANE SUGAR x2", in the order things were first added
     string Describe()
     {
         var counts = Counts();
-        return string.Join("\n", added.Distinct().Select(n =>
+        return string.Join(", ", added.Distinct().Select(n =>
             counts[n] > 1 ? $"{n.displayName.ToUpper()} x{counts[n]}" : n.displayName.ToUpper()));
     }
 }

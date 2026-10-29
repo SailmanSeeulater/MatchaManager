@@ -87,14 +87,14 @@ public class DrinkBrowser : MonoBehaviour
             if (IsMoreSlot(i))
             {
                 slots[i].interactable = true;
-                slotLabels[i].text = $"MORE <size=70%>{page + 1}/{PageCount}</size>";
+                slotLabels[i].text = $"MORE\n{page + 1}/{PageCount}";
             }
             else if (i < entries.Count)
             {
                 var node = entries[i];
                 slots[i].interactable = true;
                 slotLabels[i].text = node.IsIngredient
-                    ? $"{node.displayName.ToUpper()}\n<size=75%><color=#3f6b2e>+{node.PortionLabel.ToUpper()}</color></size>"
+                    ? $"{node.displayName.ToUpper()}\n<color=#3f6b2e>+{node.PortionLabel.ToUpper()}</color>"
                     : node.displayName.ToUpper();
             }
             else
@@ -104,6 +104,21 @@ public class DrinkBrowser : MonoBehaviour
             }
         }
         backButton.interactable = path.Count > 1;
-        pathText.text = string.Join(" > ", path.Select((n, i) => i == 0 ? "HOME" : n.displayName.ToUpper()));
+        pathText.text = PathLabel();
+    }
+
+    // "HOME > FLAVORS > TEA"; when that's too long for the bar, the start is
+    // dropped instead of the end so you always see where you are: "... > TEA > MATCHA".
+    string PathLabel()
+    {
+        const int maxChars = 24;
+        var names = path.Select((n, i) => i == 0 ? "HOME" : n.displayName.ToUpper()).ToList();
+        var label = string.Join(" > ", names);
+        while (label.Length > maxChars && names.Count > 1)
+        {
+            names.RemoveAt(0);
+            label = "... > " + string.Join(" > ", names);
+        }
+        return label;
     }
 }

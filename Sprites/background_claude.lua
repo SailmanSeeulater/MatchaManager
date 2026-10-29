@@ -78,6 +78,12 @@ local G = {
   ["9"]={"###","#.#","###","..#","##."}, [":"]={".","#",".","#","."}, ["."]={".",".",".",".","#"},
   [">"]={"#..",".#.","..#",".#.","#.."}, ["-"]={"...","...","###","...","..."}, ["+"]={"...",".#.","###",".#.","..."},
   ["/"]={"..#","..#",".#.","#..","#.."}, ["$"]={".##","##.",".#.",".##","##."}, [" "]={"..","..","..","..",".."},
+  ["!"]={"#","#","#",".","#"}, ["?"]={"##.","..#",".#.","...",".#."}, ["'"]={"#","#",".",".","."},
+  [","]={"..","..","..",".#","#."}, ["("]={".#","#.","#.","#.",".#"}, [")"]={"#.",".#",".#",".#","#."},
+  ["["]={"##","#.","#.","#.","##"}, ["]"]={"##",".#",".#",".#","##"}, ["<"]={"..#",".#.","#..",".#.","..#"},
+  ["%"]={"#.#","..#",".#.","#..","#.#"}, ["="]={"...","###","...","###","..."}, ['"']={"#.#","#.#","...","...","..."},
+  [";"]={".","#",".","#","#"}, ["_"]={"...","...","...","...","###"}, ["*"]={"...","#.#",".#.","#.#","..."},
+  ELLIPSIS={".....",".....",".....",".....","#.#.#"},
 }
 local function textWidth(s, sc)
   sc = sc or 1; local w = 0
@@ -234,18 +240,19 @@ layer("Plant_Monstera", function()
   fill(273, 124, 19, 3, P.terraDk); box(273, 124, 19, 3, P.ink)
 end)
 
+-- tall enough for a pixel-font order of up to 7 short lines
 layer("Order_Bubble", function()
-  rbox(242, 6, 54, 34, P.white, P.ink, 3)
-  for k = 0, 6 do fill(234 + k, 40 - k + 0, 8 - k, 1, P.white); px(233 + k, 41 - k, P.ink) end
-  line(234, 40, 242, 35, P.ink)
+  rbox(242, 4, 54, 44, P.white, P.ink, 3)
+  for k = 0, 6 do fill(234 + k, 46 - k, 8 - k, 1, P.white); px(233 + k, 47 - k, P.ink) end
+  line(234, 46, 242, 41, P.ink)
 end)
 
 layer("Patience_Track", function()
-  rbox(242, 44, 54, 7, P.grayDk, P.ink, 1)
+  rbox(242, 50, 54, 7, P.grayDk, P.ink, 1)
 end)
 
 layer("Patience_Fill", function()
-  fill(243, 45, 52, 5, P.m); fill(243, 45, 52, 1, P.mLt)
+  fill(243, 51, 52, 5, P.m); fill(243, 51, 52, 1, P.mLt)
 end)
 
 layer("Drink_Station_Background", function()
@@ -453,3 +460,30 @@ layer("Frame", function()
 end)
 
 spr:saveAs(out)
+
+-- The same 3x5 font as a glyph atlas for Unity: white glyphs on transparent, one per
+-- 8x8 cell with a clear border, so text rendering never picks up a neighbor's pixels.
+-- plus PixelFont.json with each glyph's code point, cell and width.
+local fontdir = app.params["fontdir"]
+if fontdir then
+  local keys = {}
+  for k in pairs(G) do keys[#keys + 1] = k end
+  table.sort(keys)
+  local CELL, COLS = 8, 16
+  local img = Image(COLS * CELL, math.ceil(#keys / COLS) * CELL, ColorMode.RGB)
+  local white = app.pixelColor.rgba(255, 255, 255, 255)
+  local entries = {}
+  for i, k in ipairs(keys) do
+    local g = G[k]
+    local cx, cy = ((i - 1) % COLS) * CELL + 1, ((i - 1) // COLS) * CELL + 1
+    for r = 1, 5 do for c = 1, #g[r] do
+      if g[r]:sub(c, c) == "#" then img:drawPixel(cx + c - 1, cy + r - 1, white) end
+    end end
+    local code = k == "ELLIPSIS" and 0x2026 or string.byte(k)
+    entries[#entries + 1] = string.format('{"code":%d,"x":%d,"y":%d,"w":%d}', code, cx, cy, #g[1])
+  end
+  img:saveAs(app.fs.joinPath(fontdir, "PixelFont.png"))
+  local f = io.open(app.fs.joinPath(fontdir, "PixelFont.json"), "w")
+  f:write('{"height":5,"glyphs":[' .. table.concat(entries, ",") .. ']}\n')
+  f:close()
+end

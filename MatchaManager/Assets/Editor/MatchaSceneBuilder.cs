@@ -19,6 +19,9 @@ public static class MatchaSceneBuilder
     const string SnackDir = "Assets/Data/Snacks";
     const int RefWidth = 480, RefHeight = 270;
 
+    // text sizes: the pixel font is crisp at whole multiples of its 7px line
+    const float Px = PixelFontBuilder.PointSize, Px2 = Px * 2;
+
     static readonly Color Ink = Hex("1e1a2b");
     static readonly Color Cream = Hex("f3ead6");
     static readonly Color MatchaDark = Hex("2e5222");
@@ -28,11 +31,13 @@ public static class MatchaSceneBuilder
     [Serializable] class LayerData { public LayerFrame[] frames; }
 
     static Dictionary<string, LayerRect> rects;
+    static TMP_FontAsset pixelFont;
 
     [MenuItem("Matcha/Build Scene")]
     public static void Build()
     {
         LoadRects();
+        pixelFont = PixelFontBuilder.Build();
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
         var camGo = new GameObject("Main Camera");
@@ -94,10 +99,10 @@ public static class MatchaSceneBuilder
         var orderGroup = orderUI.gameObject.AddComponent<CanvasGroup>();
         orderGroup.blocksRaycasts = false;
         var bubble = AddImage(orderUI, "Order_Bubble");
-        var order = AddText(bubble, "OrderText", 11, 2, 50, 32, "SUNDAY MATCHA\n<color=#8a2e2c>NO MILK</color>\n+ DANISH", 6, Ink, TextAlignmentOptions.Center);
-        // orders vary in length: wrap and shrink to fit the bubble, lines packed tight
-        FitText(order, 3, 6);
-        order.lineSpacing = -12;
+        var order = AddText(bubble, "OrderText", 11, 3, 50, 41, "SUNDAY MATCHA\n<color=#8a2e2c>NO MILK</color>\n+ DANISH", Px, Ink, TextAlignmentOptions.Center);
+        // orders vary in length: wrap, with lines packed 1px tighter than usual
+        Wrap(order);
+        order.lineSpacing = LineGap(-1);
         AddImage(orderUI, "Patience_Track");
         var fill = AddImage(orderUI, "Patience_Fill").GetComponent<Image>();
         fill.type = Image.Type.Filled;
@@ -115,20 +120,18 @@ public static class MatchaSceneBuilder
         for (int i = 0; i < 5; i++)
         {
             var slot = AddButton(drink, "Slot_" + (i + 1));
-            var label = AddText(slot, "Label", 2, 0, 53, 24, placeholder[i], 7, Ink, TextAlignmentOptions.Center);
-            FitText(label, 4, 7);
+            var label = AddText(slot, "Label", 2, 0, 53, 24, placeholder[i], Px, Ink, TextAlignmentOptions.Center);
+            Wrap(label);
             slots[i] = slot.GetComponent<Button>();
             slotLabels[i] = label;
         }
         slots[4].interactable = false;
         var back = AddButton(drink, "Back_Button");
-        AddText(back, "Label", 22, 0, 33, 24, "BACK", 7, MatchaDark, TextAlignmentOptions.Left);
+        AddText(back, "Label", 22, 0, 33, 24, "BACK", Px, MatchaDark, TextAlignmentOptions.Left);
         var path = AddImage(drink, "Path_Bar");
-        var pathText = AddText(path, "PathText", 3, 0, 105, 11, "HOME", 6, Ink, TextAlignmentOptions.Left);
-        FitText(pathText, 3.5f, 6);
-        pathText.textWrappingMode = TextWrappingModes.NoWrap;
-        var readout = AddText(drink, "CupReadout", 366, 48, 108, 33, "", 5, Ink, TextAlignmentOptions.TopLeft);
-        FitText(readout, 3, 5);
+        var pathText = AddText(path, "PathText", 3, 0, 105, 11, "HOME", Px, Ink, TextAlignmentOptions.Left);
+        var readout = AddText(drink, "CupReadout", 366, 48, 108, 33, "", Px, Ink, TextAlignmentOptions.TopLeft);
+        Wrap(readout);
         var demoFill = AddImage(drink, "Cup_Fill_Demo");
         demoFill.gameObject.SetActive(false);
         // layers stack inside the glass shape: Cup_Mask is the glass interior
@@ -152,7 +155,7 @@ public static class MatchaSceneBuilder
         browser.backButton = back.GetComponent<Button>();
         browser.pathText = pathText;
         browser.cup = cup;
-        AddText(drink, "ServeLabel", 450, 127, 28, 8, "SERVE", 6, Ink, TextAlignmentOptions.Center);
+        AddText(drink, "ServeLabel", 450, 127, 28, 8, "SERVE", Px, Ink, TextAlignmentOptions.Center);
 
         // --- Prep station (bottom-left) ---
         var prep = Group(screen, "PrepStation");
@@ -174,10 +177,10 @@ public static class MatchaSceneBuilder
         // microwave heats fast but burns fast; the toaster oven is slower and more forgiving
         var micro = AddButton(prep, "Microwave");
         var microSnack = AddSnackImage(micro, "Snack", 37, 35);
-        var microTimer = AddText(micro, "TimerText", 4, 5, 66, 11, "", 8, Cream, TextAlignmentOptions.Center);
+        var microTimer = AddText(micro, "TimerText", 4, 5, 66, 11, "", Px, Cream, TextAlignmentOptions.Center);
         var oven = AddButton(prep, "Toaster_Oven");
         var ovenSnack = AddSnackImage(oven, "Snack", 42, 26);
-        var ovenTimer = AddText(oven, "TimerText", 6, 4, 72, 9, "", 7, Cream, TextAlignmentOptions.Center);
+        var ovenTimer = AddText(oven, "TimerText", 6, 4, 72, 9, "", Px, Cream, TextAlignmentOptions.Center);
 
         var snacks = prep.gameObject.AddComponent<SnackStation>();
         snacks.slots = snackSlots.ToArray();
@@ -193,24 +196,24 @@ public static class MatchaSceneBuilder
         var recipe = Group(screen, "RecipePanel");
         AddImage(recipe, "Recipe_Panel");
         var tabMenu = AddButton(recipe, "Tab_Menu");
-        AddText(tabMenu, "Label", 0, 0, 36, 13, "MENU", 6, Ink, TextAlignmentOptions.Center);
+        AddText(tabMenu, "Label", 0, 0, 36, 13, "MENU", Px, Ink, TextAlignmentOptions.Center);
         var tabRecipe = AddButton(recipe, "Tab_Recipe");
-        AddText(tabRecipe, "Label", 0, 0, 46, 13, "RECIPE", 6, Ink, TextAlignmentOptions.Center);
+        AddText(tabRecipe, "Label", 0, 0, 46, 13, "RECIPE", Px, Ink, TextAlignmentOptions.Center);
         AddImage(recipe, "Recipe_Paper");
-        var recipeTitle = AddText(recipe, "RecipeTitle", 318, 186, 150, 9, "SUNDAY MATCHA", 7, MatchaDark, TextAlignmentOptions.Left);
+        var recipeTitle = AddText(recipe, "RecipeTitle", 318, 186, 150, 9, "SUNDAY MATCHA", Px, MatchaDark, TextAlignmentOptions.Left);
         recipeTitle.raycastTarget = true;
         var titleButton = recipeTitle.gameObject.AddComponent<Button>();
         titleButton.transition = Selectable.Transition.None;
         titleButton.navigation = new Navigation { mode = Navigation.Mode.None };
         var recipeBody = AddText(recipe, "RecipeBody", 316, 199, 156, 54,
             "[x] CEREMONIAL MATCHA 100G\n[ ] WATER 4 OZ\n[ ] ANY MILK 6 OZ\n[ ] ANY SWEETENER 15G\n[ ] HOT DANISH",
-            6, Ink, TextAlignmentOptions.TopLeft);
-        FitText(recipeBody, 4, 6);
-        recipeBody.lineSpacing = 30;
+            Px, Ink, TextAlignmentOptions.TopLeft);
+        Wrap(recipeBody);
+        recipeBody.lineSpacing = LineGap(2); // 9px lines, one per ruled line on the paper
 
         // menu tab: two columns sitting on the paper's ruled lines (every 9px from y=200)
-        var drinkHeader = AddText(recipe, "DrinkHeader", 316, 201, 76, 8, "DRINKS", 6, MatchaDark, TextAlignmentOptions.Left);
-        var snackHeader = AddText(recipe, "SnackHeader", 396, 201, 76, 8, "SNACKS", 6, MatchaDark, TextAlignmentOptions.Left);
+        var drinkHeader = AddText(recipe, "DrinkHeader", 316, 201, 76, 8, "DRINKS", Px, MatchaDark, TextAlignmentOptions.Left);
+        var snackHeader = AddText(recipe, "SnackHeader", 396, 201, 76, 8, "SNACKS", Px, MatchaDark, TextAlignmentOptions.Left);
         var drinkRows = new Button[5];
         var snackRows = new Button[5];
         for (int i = 0; i < 5; i++)
@@ -234,10 +237,10 @@ public static class MatchaSceneBuilder
         // --- Status bar (bottom strip) ---
         var status = Group(screen, "StatusBar");
         AddImage(status, "Status_Bar");
-        var coinsText = AddText(status, "CoinsText", 13, 259, 36, 10, "0", 7, Cream, TextAlignmentOptions.Left);
-        var dayText = AddText(status, "DayText", 57, 259, 40, 10, "DAY 1", 7, Cream, TextAlignmentOptions.Left);
-        var clockText = AddText(status, "ClockText", 113, 259, 60, 10, "9:00 AM", 7, Cream, TextAlignmentOptions.Left);
-        var servedText = AddText(status, "ServedText", 340, 259, 76, 10, "SERVED 0", 7, Cream, TextAlignmentOptions.Right);
+        var coinsText = AddText(status, "CoinsText", 13, 259, 36, 10, "0", Px, Cream, TextAlignmentOptions.Left);
+        var dayText = AddText(status, "DayText", 57, 259, 40, 10, "DAY 1", Px, Cream, TextAlignmentOptions.Left);
+        var clockText = AddText(status, "ClockText", 113, 259, 60, 10, "9:00 AM", Px, Cream, TextAlignmentOptions.Left);
+        var servedText = AddText(status, "ServedText", 340, 259, 76, 10, "SERVED 0", Px, Cream, TextAlignmentOptions.Right);
         // one lit dot per happy customer, over the 10 grey ones drawn in Status_Bar
         var servedDots = new GameObject[10];
         for (int i = 0; i < servedDots.Length; i++)
@@ -275,11 +278,11 @@ public static class MatchaSceneBuilder
         summary.GetComponent<Image>().raycastTarget = true; // blocks clicks on the shop behind it
         AddRect(summary, "Border", 150, 58, 180, 136, Ink);
         AddRect(summary, "Paper", 152, 60, 176, 132, Cream);
-        var summaryTitle = AddText(summary, "Title", 152, 66, 176, 14, "DAY 1 DONE", 10, MatchaDark, TextAlignmentOptions.Center);
-        var summaryBody = AddText(summary, "Body", 170, 84, 140, 72, "", 6, Ink, TextAlignmentOptions.TopLeft);
-        summaryBody.lineSpacing = 20;
+        var summaryTitle = AddText(summary, "Title", 152, 66, 176, 14, "DAY 1 DONE", Px2, MatchaDark, TextAlignmentOptions.Center);
+        var summaryBody = AddText(summary, "Body", 170, 86, 140, 72, "", Px, Ink, TextAlignmentOptions.TopLeft);
+        summaryBody.lineSpacing = LineGap(2);
         var nextDayButton = AddRectButton(summary, "NextDayButton", 190, 164, 100, 20, Hex("6fa04a"));
-        AddText((RectTransform)nextDayButton.transform, "Label", 0, 0, 100, 20, "NEXT DAY", 8, Cream, TextAlignmentOptions.Center);
+        AddText((RectTransform)nextDayButton.transform, "Label", 0, 0, 100, 20, "NEXT DAY", Px2, Cream, TextAlignmentOptions.Center);
         summary.gameObject.SetActive(false);
 
         var day = screen.gameObject.AddComponent<DayCycle>();
@@ -299,10 +302,10 @@ public static class MatchaSceneBuilder
         AddImage(titleRoot, "Title_Card");
         var continueButton = AddRectButton(titleRoot, "ContinueButton", 170, 150, 140, 28, Hex("6fa04a"));
         var continueRt = (RectTransform)continueButton.transform;
-        AddText(continueRt, "Label", 0, 3, 140, 13, "CONTINUE", 9, Cream, TextAlignmentOptions.Center);
-        var continueInfo = AddText(continueRt, "Info", 0, 16, 140, 9, "DAY 1  -  0 COINS", 5, Cream, TextAlignmentOptions.Center);
+        AddText(continueRt, "Label", 0, 3, 140, 13, "CONTINUE", Px2, Cream, TextAlignmentOptions.Center);
+        var continueInfo = AddText(continueRt, "Info", 0, 17, 140, 9, "DAY 1  -  0 COINS", Px, Cream, TextAlignmentOptions.Center);
         var newGameButton = AddRectButton(titleRoot, "NewGameButton", 170, 186, 140, 20, Hex("e0d2b2"));
-        var newGameLabel = AddText((RectTransform)newGameButton.transform, "Label", 0, 0, 140, 20, "NEW GAME", 8, Ink, TextAlignmentOptions.Center);
+        var newGameLabel = AddText((RectTransform)newGameButton.transform, "Label", 0, 0, 140, 20, "NEW GAME", Px2, Ink, TextAlignmentOptions.Center);
         var title = titleRoot.gameObject.AddComponent<TitleScreen>();
         title.day = day;
         title.continueButton = continueButton;
@@ -431,14 +434,11 @@ public static class MatchaSceneBuilder
     // The text itself is the button's graphic: ink normally, green on hover.
     static Button AddMenuRow(RectTransform parent, string name, float x, float y)
     {
-        var label = AddText(parent, name, x, y, 76, 8, "", 6, Color.white, TextAlignmentOptions.Left);
+        var label = AddText(parent, name, x, y, 76, 8, "", Px, Color.white, TextAlignmentOptions.Left);
         label.margin = new Vector4(0, 0, 12, 0);
-        label.enableAutoSizing = true;
-        label.fontSizeMin = 4;
-        label.fontSizeMax = 6;
         label.overflowMode = TextOverflowModes.Ellipsis;
         label.raycastTarget = true;
-        var price = AddText(label.rectTransform, "Price", 64, 0, 12, 8, "", 6, MatchaDark, TextAlignmentOptions.Right);
+        var price = AddText(label.rectTransform, "Price", 64, 0, 12, 8, "", Px, MatchaDark, TextAlignmentOptions.Right);
         var btn = label.gameObject.AddComponent<Button>();
         btn.targetGraphic = label;
         var colors = btn.colors;
@@ -509,6 +509,7 @@ public static class MatchaSceneBuilder
         rt.SetParent(parent, false);
         Place(rt, x, y, w, h);
         var tmp = go.AddComponent<TextMeshProUGUI>();
+        tmp.font = pixelFont;
         tmp.text = text;
         tmp.fontSize = size;
         tmp.color = color;
@@ -519,15 +520,16 @@ public static class MatchaSceneBuilder
         return tmp;
     }
 
-    // Wrap and shrink text so variable-length strings stay inside their box.
-    static void FitText(TMP_Text tmp, float min, float max)
+    // Wrap long text inside its box and cut off whatever still doesn't fit. No auto-sizing:
+    // in-between sizes would draw the pixel font's pixels unevenly.
+    static void Wrap(TMP_Text tmp)
     {
         tmp.textWrappingMode = TextWrappingModes.Normal;
         tmp.overflowMode = TextOverflowModes.Truncate;
-        tmp.enableAutoSizing = true;
-        tmp.fontSizeMin = min;
-        tmp.fontSizeMax = max;
     }
+
+    // TMP line spacing for an extra (or, negative, fewer) number of pixels between lines.
+    static float LineGap(int pixels) => pixels * 100f / Px;
 
     public static string Arg(string name)
     {
