@@ -17,6 +17,7 @@ public static class MatchaSceneBuilder
     const string LayerDir = "Assets/Art/Layers/";
     const string ScenePath = "Assets/Scenes/Main.unity";
     const string SnackDir = "Assets/Data/Snacks";
+    const string AudioDir = "Assets/Audio";
     const int RefWidth = 480, RefHeight = 270;
 
     // text sizes: the pixel font is crisp at whole multiples of its 7px line
@@ -47,6 +48,7 @@ public static class MatchaSceneBuilder
         cam.clearFlags = CameraClearFlags.SolidColor;
         cam.backgroundColor = Color.black;
         camGo.transform.position = new Vector3(0, 0, -10);
+        camGo.AddComponent<AudioListener>();
 
         var canvasGo = new GameObject("Canvas", typeof(RectTransform));
         var canvas = canvasGo.AddComponent<Canvas>();
@@ -313,6 +315,23 @@ public static class MatchaSceneBuilder
         title.newGameButton = newGameButton;
         title.newGameLabel = newGameLabel;
         day.title = title;
+
+        // --- Sound ---
+        var sound = new GameObject("SoundFX").AddComponent<SoundFX>();
+        sound.sounds = ((Sfx[])Enum.GetValues(typeof(Sfx))).Select(id => new SoundFX.Entry
+        {
+            id = id,
+            clip = AssetDatabase.LoadAssetAtPath<AudioClip>($"{AudioDir}/{id}.wav"),
+            volume = id == Sfx.Click ? 0.6f : 1f,
+            pitchJitter = id == Sfx.Pour || id == Sfx.Click || id == Sfx.Tray ? 0.08f : 0f,
+        }).ToArray();
+        foreach (var e in sound.sounds.Where(e => e.clip == null))
+            Debug.LogWarning($"[Matcha] Missing {AudioDir}/{e.id}.wav: run Tools/make_sfx.py");
+        sound.clickButtons = new[]
+        {
+            back.GetComponent<Button>(), tabMenu.GetComponent<Button>(), tabRecipe.GetComponent<Button>(), titleButton,
+            nextDayButton, continueButton, newGameButton,
+        }.Concat(drinkRows).Concat(snackRows).ToArray();
         var preview = AddImage(screen, "Text_Preview");
         preview.gameObject.SetActive(false); // reference only: real text is TextMeshPro
 

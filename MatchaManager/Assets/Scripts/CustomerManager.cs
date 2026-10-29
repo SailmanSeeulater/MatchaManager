@@ -141,6 +141,7 @@ public class CustomerManager : MonoBehaviour
                 {
                     Today.walkedOut++;
                     React("I'M LEAVING!", "8a2e2c");
+                    SoundFX.Play(Sfx.WalkOut);
                 }
                 break;
             case State.Reacting:
@@ -163,7 +164,11 @@ public class CustomerManager : MonoBehaviour
             if (arrivalTimer <= 0)
             {
                 arrivalTimer = Random.Range(arrivalInterval.x, arrivalInterval.y) * arrivalScale;
-                if (line.Count < lineViews.Length) line.Add(NewPatron());
+                if (line.Count < lineViews.Length)
+                {
+                    line.Add(NewPatron());
+                    SoundFX.Play(Sfx.Arrive);
+                }
                 else Debug.Log("[Customers] Line is full; someone saw it and kept walking");
             }
         }
@@ -175,6 +180,7 @@ public class CustomerManager : MonoBehaviour
             line.RemoveAt(i);
             Today.walkedOut++;
             Debug.Log("[Customers] Gave up waiting in line");
+            SoundFX.Play(Sfx.WalkOut);
             RefreshStatus();
         }
         RefreshLine();
@@ -226,6 +232,7 @@ public class CustomerManager : MonoBehaviour
             Today.wrong++;
             Debug.Log("[Customers] Wrong drink: " + Explain(result));
             React("THAT'S NOT\nWHAT I ORDERED", "8a2e2c");
+            SoundFX.Play(Sfx.ServeBad);
             return;
         }
         var snackProblem = CurrentOrder.SnackProblem(got, heat);
@@ -234,12 +241,14 @@ public class CustomerManager : MonoBehaviour
             Today.wrong++;
             Debug.Log($"[Customers] Snack problem: wanted {CurrentOrder.snack.displayName}, got {(got != null ? got.displayName : "nothing")} ({heat})");
             React(snackProblem, "8a2e2c");
+            SoundFX.Play(Sfx.ServeBad);
             return;
         }
         int tip = Mathf.RoundToInt(CurrentOrder.Price * patience);
         int paid = CurrentOrder.Price + tip;
         Coins += paid;
         Today.happy++;
+        SoundFX.Play(Sfx.ServeGood);
         Today.earned += paid;
         React($"{(patience > 0.6f ? "PERFECT!" : "FINALLY...\nTHANKS")}\n<color=#2e5222>+{paid}</color>", "1e1a2b");
     }

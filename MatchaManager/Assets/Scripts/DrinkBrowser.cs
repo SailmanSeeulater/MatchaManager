@@ -46,6 +46,7 @@ public class DrinkBrowser : MonoBehaviour
         if (IsMoreSlot(index))
         {
             page = (page + 1) % PageCount;
+            SoundFX.Play(Sfx.Click);
             Refresh();
             return;
         }
@@ -59,6 +60,7 @@ public class DrinkBrowser : MonoBehaviour
             return;
         }
         path.Add(node);
+        SoundFX.Play(Sfx.Click);
         page = 0;
         Refresh();
     }

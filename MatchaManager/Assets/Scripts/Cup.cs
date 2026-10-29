@@ -38,7 +38,7 @@ public class Cup : MonoBehaviour
     void Awake()
     {
         serveButton.onClick.AddListener(Serve);
-        if (dumpButton != null) dumpButton.onClick.AddListener(Clear);
+        if (dumpButton != null) dumpButton.onClick.AddListener(PourOut);
         Refresh();
     }
 
@@ -48,6 +48,7 @@ public class Cup : MonoBehaviour
         if (filledPixels + ingredient.cupPixels > Capacity)
         {
             readout.text = Describe() + "\n<color=#b8423f>CUP IS FULL</color>";
+            SoundFX.Play(Sfx.CupFull);
             return false;
         }
         added.Add(ingredient);
@@ -65,6 +66,7 @@ public class Cup : MonoBehaviour
         img.raycastTarget = false;
         layers.Add(layer);
         filledPixels += ingredient.cupPixels;
+        SoundFX.Play(Sfx.Pour);
 
         Refresh();
         return true;
@@ -84,6 +86,14 @@ public class Cup : MonoBehaviour
         Debug.Log("[Cup] Served: " + Describe().Replace("\n", ", "));
         Clear();
         Served?.Invoke(drink);
+    }
+
+    // Clicking the glass: tip the drink out.
+    public void PourOut()
+    {
+        if (IsEmpty) return;
+        SoundFX.Play(Sfx.Dump);
+        Clear();
     }
 
     public void Clear()

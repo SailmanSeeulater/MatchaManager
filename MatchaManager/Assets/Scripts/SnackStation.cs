@@ -66,7 +66,7 @@ public class SnackStation : MonoBehaviour
             int index = i;
             appliances[i].button.onClick.AddListener(() => ClickAppliance(index));
         }
-        trayButton.onClick.AddListener(ClearTray);
+        trayButton.onClick.AddListener(TossTray);
         Refresh();
     }
 
@@ -79,6 +79,7 @@ public class SnackStation : MonoBehaviour
         if (snack.needsHeating)
         {
             Held = Held == snack ? null : snack;
+            SoundFX.Play(Sfx.Pick);
             Refresh();
             return;
         }
@@ -94,6 +95,7 @@ public class SnackStation : MonoBehaviour
             if (Held == null) return;
             a.snack = Held;
             a.time = 0;
+            SoundFX.Play(Sfx.HeatStart);
             Held = null;
             Refresh();
             return;
@@ -135,12 +137,27 @@ public class SnackStation : MonoBehaviour
             var before = a.Heat;
             a.time += dt;
             RefreshAppliance(a);
-            if (a.Heat != before && a.Heat == Heat.Burnt) Debug.Log($"[Snacks] {a.snack.displayName} burnt");
+            if (a.Heat == before) continue;
+            if (a.Heat == Heat.Warm) SoundFX.Play(Sfx.Ready);
+            if (a.Heat == Heat.Burnt)
+            {
+                SoundFX.Play(Sfx.Burnt);
+                Debug.Log($"[Snacks] {a.snack.displayName} burnt");
+            }
         }
+    }
+
+    // Clicking the tray throws its snack away.
+    public void TossTray()
+    {
+        if (TraySnack == null) return;
+        SoundFX.Play(Sfx.Dump);
+        ClearTray();
     }
 
     void PutOnTray(Snack snack, Heat heat)
     {
+        SoundFX.Play(Sfx.Tray);
         TraySnack = snack;
         TrayHeat = heat;
         Refresh();

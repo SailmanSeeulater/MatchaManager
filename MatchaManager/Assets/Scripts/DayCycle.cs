@@ -105,6 +105,7 @@ public class DayCycle : MonoBehaviour
         if (snacks != null) snacks.ResetAll();
         customers.StartDay();
         dayText.text = $"DAY {Day}";
+        SoundFX.Play(Sfx.DayStart);
         RefreshClock();
         save.day = Day;
         save.coins = customers.Coins;
@@ -136,6 +137,7 @@ public class DayCycle : MonoBehaviour
             $"BEST DAY<pos=70%>{save.bestHappy} HAPPY{(newBest && Day > 1 ? " <color=#2e5222>NEW!</color>" : "")}\n" +
             verdict;
         summary.SetActive(true);
+        SoundFX.Play(Sfx.DayEnd);
         Debug.Log($"[Day] Day {Day} done: served {t.served}, happy {t.happy}, wrong {t.wrong}, walked out {t.walkedOut}, earned {t.earned}");
     }
 
