@@ -42,6 +42,8 @@ public class Order
     public bool unclear;
     public string clue;
     public string ShownName => unclear ? clue : recipe.displayName.ToUpper();
+    // What an unclear customer mumbles: the name, then the changes ("SUNDAY MATCHA, NO MILK").
+    public string Mumble => string.Join(", ", new[] { recipe.displayName.ToUpper() }.Concat(requests));
     public readonly Snack snack; // null = drink only
     public readonly List<Line> lines;
     public readonly List<string> requests = new List<string>(); // shown in the bubble

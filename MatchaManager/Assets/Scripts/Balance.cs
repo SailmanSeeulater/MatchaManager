@@ -77,8 +77,15 @@ public class Balance : ScriptableObject
     [Range(0, 1)] public float maxUnclearChance = 0;
     [Tooltip("A wrong guess takes this much patience from everyone waiting (0.1 = 10%)")]
     public float wrongGuessPenalty = 0.1f;
-    [Tooltip("Making an unclear order right without asking adds this much of the price as a bonus")]
+    [Tooltip("Making an unclear order right without asking adds up to this much of the price as a bonus. " +
+             "It shrinks as the peek shows more of the order, down to nothing once it's all been shown")]
     public float guessBonus = 0.5f;
+    [Tooltip("How many letters of the mumbled order are clear at once; the rest show as ?")]
+    public int peekLetters = 3;
+    [Tooltip("How fast the clear letters slide along the mumbled order (letters per second)")]
+    public float peekSpeed = 3;
+    [Tooltip("Pause in seconds before the clear letters start again from the beginning")]
+    public float peekPause = 1.5f;
     [HideInInspector] public int presetVersion; // lets Build Scene add new preset settings to older assets
 
     [Header("Costs")]

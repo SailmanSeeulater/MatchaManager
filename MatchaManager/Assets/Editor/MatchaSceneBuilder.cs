@@ -781,6 +781,13 @@ public static class MatchaSceneBuilder
             b => { },
             b => { b.patienceBase = 8; b.secondsPerPress = 2.8f; b.fastZone = 0.75f; b.fastBonus = 0.6f; b.lateZone = 0.35f; b.latePay = 0.4f; },
         };
+        // mumble peek: fewer clear letters, sliding faster on hard
+        var presetsV4 = new System.Action<Balance>[]
+        {
+            b => { },
+            b => { },
+            b => { b.peekLetters = 2; b.peekSpeed = 4.5f; b.peekPause = 1; },
+        };
         var result = new Balance[DifficultyPaths.Length];
         for (int i = 0; i < DifficultyPaths.Length; i++)
         {
@@ -808,6 +815,12 @@ public static class MatchaSceneBuilder
             {
                 presetsV3[i](result[i]);
                 result[i].presetVersion = 3;
+                EditorUtility.SetDirty(result[i]);
+            }
+            if (result[i].presetVersion < 4)
+            {
+                presetsV4[i](result[i]);
+                result[i].presetVersion = 4;
                 EditorUtility.SetDirty(result[i]);
             }
         }

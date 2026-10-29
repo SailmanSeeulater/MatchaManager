@@ -42,7 +42,10 @@ MonoBehaviour:
   maxUnclearChance: 0.6
   wrongGuessPenalty: 0.1
   guessBonus: 0.5
-  presetVersion: 3
+  peekLetters: 2
+  peekSpeed: 4.5
+  peekPause: 1
+  presetVersion: 4
   startingCoins: 15
   costMultiplier: 1.2
   dumpPenalty: 0.1

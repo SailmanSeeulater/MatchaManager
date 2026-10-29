@@ -4,7 +4,8 @@ using UnityEngine;
 
 // Headless check for unclear orders: which drinks can be mumbled and as what,
 // asking (wrong guess costs everyone patience, right guess reveals the order and
-// its changes), the bonus for making one right without asking, and that Easy never mumbles.
+// its changes), the peek sliding along the mumble, the bonus for making one right without
+// asking (smaller the more the peek has shown), and that Easy never mumbles.
 // Run: Unity -batchmode -quit -projectPath . -executeMethod AmbiguityCheck.Run -captureOut out.png
 public static class AmbiguityCheck
 {
@@ -44,6 +45,13 @@ public static class AmbiguityCheck
         var other = customers.Arrive(new Order(customers.recipes.First(r => r.displayName == "Mocha")));
         customers.Tick(1);
         Log("arrived");
+        customers.Select(mumbler.spot);
+        for (int i = 0; i < 4; i++)
+        {
+            customers.Tick(0.7f);
+            Log($"peek {mumbler.peekTime:0.0}s seen {mumbler.seen:P0} bonus {customers.GuessBonusNow(mumbler)}");
+        }
+        MatchaSceneBuilder.Capture(MatchaSceneBuilder.Arg("-captureOut")?.Replace(".png", "_peek.png") ?? "AmbiguityPeek.png");
         customers.ClickTicket(mumbler.spot);
         Log("asked");
         MatchaSceneBuilder.Capture(MatchaSceneBuilder.Arg("-captureOut") ?? "AmbiguityCheck.png");
@@ -56,14 +64,21 @@ public static class AmbiguityCheck
         Log("guessed right");
         MatchaSceneBuilder.Capture(MatchaSceneBuilder.Arg("-captureOut")?.Replace(".png", "_revealed.png") ?? "AmbiguityRevealed.png");
 
-        // making an unclear order right without asking earns a bonus
-        for (int t = 0; t < 100 && !customers.IsEmpty; t++) customers.Tick(5);
-        var gamble = customers.Arrive(new Order(sunday), true);
-        foreach (var line in gamble.order.lines.Where(l => !l.removed))
-            for (int i = 0; i < line.portions; i++) cup.Add(line.node.Ingredients().First());
-        int coins = customers.Coins;
-        cup.Serve();
-        Debug.Log($"[Check] served unclear Sunday Matcha without asking -> '{customers.LastReaction?.Replace("\n", " ")}' paid={customers.Coins - coins} (price {gamble.order.Price})");
+        // making an unclear order right without asking earns a bonus: all of it straight away,
+        // none once the peek has shown the whole order
+        foreach (float watch in new[] { 0f, 2f, 10f })
+        {
+            for (int t = 0; t < 100 && !customers.IsEmpty; t++) customers.Tick(5);
+            var gamble = customers.Arrive(new Order(sunday), true);
+            for (float w = 0; w < watch; w += 0.25f) customers.Tick(0.25f);
+            foreach (var line in gamble.order.lines.Where(l => !l.removed))
+                for (int i = 0; i < line.portions; i++) cup.Add(line.node.Ingredients().First());
+            gamble.patience = 0.5f; // same tip each time, so only the bonus differs
+            int coins = customers.Coins + customers.Today.spent;
+            float seen = gamble.seen;
+            cup.Serve();
+            Debug.Log($"[Check] served unclear Sunday Matcha after watching {watch:0}s (seen {seen:P0}) -> '{customers.LastReaction?.Replace("\n", " ")}' paid={customers.Coins + customers.Today.spent - coins} (price {gamble.order.Price})");
+        }
     }
 
     static void Log(string step)

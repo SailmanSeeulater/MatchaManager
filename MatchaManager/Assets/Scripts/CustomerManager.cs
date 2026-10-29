@@ -18,8 +18,10 @@ using Random = UnityEngine.Random;
 //   ticket or use the arrow keys to switch.
 // - On Medium and Hard some customers mumble ("??? MATCHA"): name and changes stay
 //   hidden. Click their ticket (or G) to ask: 3 guess bubbles appear. A right guess
-//   reveals the order; a wrong one costs everyone waiting some patience. Making the
-//   right drink without asking earns a bonus.
+//   reveals the order; a wrong one costs everyone waiting some patience. Or watch: a few
+//   clear letters slide along the mumbled order (name and changes) on the ticket and the
+//   recipe panel. Making the right drink without asking earns a bonus that shrinks as
+//   more of the order has been shown, so recognising it early pays most.
 // - Ingredients and snacks cost coins as you use them. Customers can't taste the
 //   difference, so on ANY lines the cheapest choice is the most profit, unless the
 //   order asks for a particular one ("WITH CEREMONIAL MATCHA").
@@ -47,6 +49,9 @@ public class CustomerManager : MonoBehaviour
         public float ticketTime;   // when they ordered (oldest gets served first)
         public List<DrinkRecipe> guesses;              // unclear orders: the 3 names to pick from
         public HashSet<int> wrongGuesses = new HashSet<int>();
+        public float peekTime;     // unclear orders: seconds the peek has been sliding
+        public int peekStep = -1;  // which letter the peek has reached this sweep
+        public float seen;         // share of the mumble the peek has shown (0-1); shrinks the bonus
     }
 
     [Serializable]
@@ -277,6 +282,57 @@ public class CustomerManager : MonoBehaviour
         return true;
     }
 
+    // ---- the mumble peek ---------------------------------------------------
+
+    // Slides the clear letters along; the ticket and recipe panel redraw each time they move.
+    void TickPeek(Patron p, float dt)
+    {
+        p.peekTime += dt;
+        string text = p.order.Mumble;
+        int cycle = text.Length + balance.peekLetters + Mathf.RoundToInt(balance.peekPause * balance.peekSpeed);
+        int total = Mathf.FloorToInt(p.peekTime * balance.peekSpeed);
+        int step = total % cycle;
+        if (step == p.peekStep) return;
+        p.peekStep = step;
+        p.seen = Mathf.Max(p.seen, Mathf.Clamp01((total + 1f) / text.Length));
+        RefreshTicketText(p);
+        if (selected == p.spot) RefreshRecipe();
+    }
+
+    // The mumble with only the peek's letters (and the clue word) readable, e.g. "S?N??? MATCHA, ?? ????".
+    // nameOnly: just the drink name, for the small ticket.
+    string Peek(Patron p, bool nameOnly)
+    {
+        string name = p.order.recipe.displayName.ToUpper();
+        string text = nameOnly ? name : p.order.Mumble;
+        var clueWords = new HashSet<string>(p.order.clue.Split(' ').Where(w => w != "???"));
+        int last = p.peekStep, first = p.peekStep - balance.peekLetters + 1;
+        var sb = new System.Text.StringBuilder();
+        bool open = false;
+        int wordStart = 0;
+        for (int i = 0; i < text.Length; i++)
+        {
+            char c = text[i];
+            if (i == 0 || !char.IsLetterOrDigit(text[i - 1])) wordStart = i;
+            bool inPeek = p.peekStep >= 0 && i >= first && i <= last;
+            if (inPeek != open)
+            {
+                sb.Append(inPeek ? "<color=#b8423f>" : "</color>");
+                open = inPeek;
+            }
+            if (!char.IsLetterOrDigit(c) || inPeek) { sb.Append(c); continue; }
+            int wordEnd = i;
+            while (wordEnd < text.Length && char.IsLetterOrDigit(text[wordEnd])) wordEnd++;
+            bool clue = i < name.Length && clueWords.Contains(text.Substring(wordStart, wordEnd - wordStart));
+            sb.Append(clue ? c : '?');
+        }
+        if (open) sb.Append("</color>");
+        return sb.ToString();
+    }
+
+    // The bonus for serving this unclear order right now, without asking.
+    public int GuessBonusNow(Patron p) => Mathf.RoundToInt(p.order.Price * balance.guessBonus * (1 - p.seen));
+
     // How long this order's customer waits at pickup before giving up (hot snacks take a while).
     public float PatienceSeconds(Order order) =>
         (balance.patienceBase + order.KeyPresses() * balance.secondsPerPress +
@@ -382,6 +438,11 @@ public class CustomerManager : MonoBehaviour
     // and the snack. Unclear orders show the clue and "? ASK G".
     void RefreshTicketText(Patron p)
     {
+        if (p.order.unclear)
+        {
+            pickup[p.spot].ticketText.text = Peek(p, true) + "\n<color=#8a2e2c>? ASK G</color>";
+            return;
+        }
         string extras = p.order.unclear ? "<color=#8a2e2c>? ASK G</color>"
             : (p.order.requests.Count > 0 ? "<color=#8a2e2c>!</color> " : "") +
               (p.order.snack != null ? "<color=#2e5222>+" + p.order.snack.TicketName.ToUpper() + "</color>" : "");
@@ -397,6 +458,7 @@ public class CustomerManager : MonoBehaviour
             var s = pickup[i];
             if (p.stage == Stage.Waiting)
             {
+                if (p.order.unclear) TickPeek(p, dt);
                 p.patience -= dt / PatienceSeconds(p.order);
                 RefreshPatience(i);
                 if (p.patience <= 0)
@@ -452,9 +514,10 @@ public class CustomerManager : MonoBehaviour
         bool fast = p.patience >= balance.fastZone, late = p.patience <= balance.lateZone;
         int paid = late ? Mathf.RoundToInt(price * balance.latePay)
             : price + Mathf.RoundToInt(price * p.patience * balance.tipMultiplier) + (fast ? Mathf.RoundToInt(price * balance.fastBonus) : 0);
-        // made an unclear order right without asking
-        bool guessed = p.order.unclear;
-        if (guessed) paid += Mathf.RoundToInt(p.order.Price * balance.guessBonus);
+        // made an unclear order right without asking: the less the peek had shown, the bigger the bonus
+        int bonus = p.order.unclear ? GuessBonusNow(p) : 0;
+        bool guessed = bonus > 0;
+        paid += bonus;
         Coins += paid;
         Today.happy++;
         Today.earned += paid;
@@ -645,8 +708,13 @@ public class CustomerManager : MonoBehaviour
         string others = WaitingCount > 1 ? $" <color=#8a7a5a>{WaitingPatrons.Count(w => w.spot < p.spot) + 1}/{WaitingCount}</color>" : "";
         if (order.unclear)
         {
+            int bonus = GuessBonusNow(p);
+            const int charsPerRow = 38; // the mumble wraps over this many rows
+            int mumbleRows = 2 + Mathf.CeilToInt(order.Mumble.Length / (float)charsPerRow) + (order.snack != null ? 1 : 0);
             recipePanel.SetOrder($"#{p.spot + 1} {order.clue}{others}",
-                "THEY MUMBLED THE NAME.\nCLICK THEIR TICKET OR PRESS G\nTO ASK WHICH DRINK IT IS,\nOR MAKE YOUR BEST GUESS\n<color=#2e5222>(RIGHT GUESS = BONUS)</color>", 5);
+                "THEY MUMBLE. WATCH, OR G TO ASK:\n" + Peek(p, false) +
+                (order.snack != null ? "\n+ " + order.snack.displayName.ToUpper() : "") +
+                (bonus > 0 ? $"\n<color=#2e5222>MAKE IT NOW: +{bonus} BONUS</color>" : "\n<color=#8a7a5a>NO BONUS LEFT</color>"), mumbleRows);
             return;
         }
         var result = order.Check(cup.Counts());
