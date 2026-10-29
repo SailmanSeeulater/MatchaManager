@@ -28,12 +28,15 @@ public class Cup : MonoBehaviour
 
     // Ingredient -> number of portions. Customers will compare this to their order.
     public event Action<Dictionary<DrinkNode, int>> Served;
+    // Asked before serving: who takes this drink? Returns false if nobody ordered it,
+    // and then the drink stays in the cup. Null = anyone takes anything.
+    public Func<Dictionary<DrinkNode, int>, bool> Recipient;
     // Fires whenever the contents change.
     public event Action Changed;
 
     public bool IsEmpty => added.Count == 0;
 
-    // Serve only works while someone is at the counter.
+    // Serve only works while someone is waiting for a drink.
     bool hasCustomer = true;
     public bool HasCustomer
     {
@@ -145,6 +148,12 @@ public class Cup : MonoBehaviour
     {
         if (IsEmpty || !hasCustomer) return;
         var drink = Counts();
+        if (Recipient != null && !Recipient(drink))
+        {
+            readout.text = Describe() + "\n<color=#b8423f>NOBODY ORDERED THIS</color>";
+            SoundFX.Play(Sfx.CupFull);
+            return;
+        }
         Debug.Log("[Cup] Served: " + Describe().Replace("\n", ", "));
         Clear();
         Served?.Invoke(drink);

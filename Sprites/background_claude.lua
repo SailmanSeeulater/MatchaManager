@@ -432,6 +432,14 @@ layer("Text_Preview", function()
   text(372, 262, "SERVED", P.cream)
 end)
 
+-- order ticket over a customer waiting at pickup (hidden here; Unity places one per pickup spot):
+-- paper with a pin, room for 3 short lines and a patience bar, tail pointing down at the head
+layer("Ticket", function()
+  rbox(14, 22, 41, 30, P.white, P.ink, 2)
+  disc(34, 24, 1, P.red)
+  for k = 0, 3 do fill(32 + k, 51 + k, 5 - 2 * k, 1, P.white); px(31 + k, 51 + k, P.ink); px(37 - k, 51 + k, P.ink) end
+end).isVisible = false
+
 -- title screen card (hidden here; Unity shows it over the dimmed shop at startup)
 layer("Title_Card", function()
   rbox(120, 34, 240, 190, P.cream, P.ink, 4)

@@ -80,25 +80,54 @@ public static class MatchaSceneBuilder
         var shop = Group(screen, "Shop");
         AddImage(shop, "Shop_Wall");
         AddImage(shop, "Shelf");
-        // the line: further back (smaller, a little darker), left of the tray so snacks stay visible
+        // the line: smaller and darker, queued behind the one ordering at the counter
         var lineViews = new Image[2];
-        for (int i = 0; i < lineViews.Length; i++)
+        for (int i = lineViews.Length - 1; i >= 0; i--) // furthest back drawn first
         {
-            var spot = AddCustomerView(shop, "InLine_" + (i + 1), 115 - 43 * i);
-            spot.localScale = new Vector3(0.9f, 0.9f, 1);
+            var spot = AddCustomerView(shop, "InLine_" + (i + 1), 240 + 18 * i);
+            spot.localScale = new Vector3(0.75f, 0.75f, 1);
             lineViews[i] = spot.GetComponent<Image>();
             lineViews[i].enabled = false;
         }
-        var customer = AddCustomerView(shop, "Customer", 210.5f).gameObject.AddComponent<CanvasGroup>();
         var looks = new[] { "Customer_Demo", "Customer_2", "Customer_3", "Customer_4" }
             .Select(l => AssetDatabase.LoadAssetAtPath<Sprite>(LayerDir + l + ".png")).ToArray();
+
+        // pickup: up to 3 customers waiting for their drink, each with a ticket and patience bar.
+        // The Ticket layer is drawn over spot 1; the others are copies shifted right.
+        var ticketRect = rects["Ticket"];
+        var pickupSpots = new CustomerManager.PickupSpot[3];
+        for (int i = 0; i < pickupSpots.Length; i++)
+        {
+            float dx = 42 * i;
+            var group = Group(shop, "Pickup_" + (i + 1));
+            var canvasGroup = group.gameObject.AddComponent<CanvasGroup>();
+            canvasGroup.alpha = 0;
+            var view = AddCustomerView(group, "Customer", ticketRect.x + ticketRect.w / 2f + dx);
+            view.localScale = new Vector3(0.85f, 0.85f, 1);
+            var ticket = AddButton(group, "Ticket");
+            ticket.anchoredPosition += new Vector2(dx, 0);
+            var ticketText = AddText(ticket, "Text", 3, 3, 35, 20, "SUNDAY MATCHA", Px, Ink, TextAlignmentOptions.Center);
+            Wrap(ticketText);
+            ticketText.lineSpacing = LineGap(-1);
+            AddRect(ticket, "PatienceBack", 3, 24, 35, 3, Ink);
+            var patienceFill = AddRect(ticket, "PatienceFill", 3, 24, 35, 3, Hex("6fa04a"));
+            pickupSpots[i] = new CustomerManager.PickupSpot
+            {
+                group = canvasGroup,
+                view = view.GetComponent<Image>(),
+                ticket = ticket.GetComponent<Button>(),
+                ticketText = ticketText,
+                patienceFill = patienceFill,
+            };
+        }
+        var customer = AddCustomerView(shop, "Customer", 210.5f).gameObject.AddComponent<CanvasGroup>();
         AddImage(shop, "Shop_Counter");
         // click the tray to throw its snack away
         var tray = AddButton(shop, "Tray");
         var traySnack = AddSnackImage(tray, "TraySnack", 27, 2);
         traySnack.raycastTarget = true; // clicking the snack itself also hits the tray
         AddImage(shop, "Plant_Monstera");
-        // bubble + patience bar fade together with the customer
+        // the order bubble fades with the customer at the counter (patience lives on the tickets now)
         var orderUI = Group(shop, "OrderUI");
         var orderGroup = orderUI.gameObject.AddComponent<CanvasGroup>();
         orderGroup.blocksRaycasts = false;
@@ -107,12 +136,6 @@ public static class MatchaSceneBuilder
         // orders vary in length: wrap, with lines packed 1px tighter than usual
         Wrap(order);
         order.lineSpacing = LineGap(-1);
-        AddImage(orderUI, "Patience_Track");
-        var fill = AddImage(orderUI, "Patience_Fill").GetComponent<Image>();
-        fill.type = Image.Type.Filled;
-        fill.fillMethod = Image.FillMethod.Horizontal;
-        fill.fillOrigin = (int)Image.OriginHorizontal.Left;
-        fill.fillAmount = 0.7f;
 
         // --- Drink station (top-right) ---
         var drink = Group(screen, "DrinkStation");
@@ -188,11 +211,11 @@ public static class MatchaSceneBuilder
         AddImage(prep, "Prep_Station_Background");
         Snack[] coldSnacks =
         {
-            EnsureSnack("Matcha Roll", "Cold_Snack_1", false, 3),
-            EnsureSnack("Strawberry Shortcake", "Cold_Snack_2", false, 4),
-            EnsureSnack("Hanami Dango", "Cold_Snack_3", false, 3),
+            EnsureSnack("Matcha Roll", "Cold_Snack_1", false, 3, "Roll"),
+            EnsureSnack("Strawberry Shortcake", "Cold_Snack_2", false, 4, "Cake"),
+            EnsureSnack("Hanami Dango", "Cold_Snack_3", false, 3, "Dango"),
         };
-        var danish = EnsureSnack("Danish", "Hot_Snack_1", true, 3);
+        var danish = EnsureSnack("Danish", "Hot_Snack_1", true, 3, "Danish");
         var snackSlots = new List<SnackStation.Slot>();
         AddImage(prep, "Cold_Case");
         for (int i = 1; i <= 3; i++)
@@ -286,11 +309,11 @@ public static class MatchaSceneBuilder
         customers.cup = cup;
         customers.snacks = snacks;
         customers.customer = customer;
+        customers.pickup = pickupSpots;
         customers.lineViews = lineViews;
         customers.looks = looks;
         customers.orderUI = orderGroup;
         customers.orderText = order;
-        customers.patienceFill = fill;
         customers.recipePanel = panel;
         panel.customers = customers;
         customers.coinsText = coinsText;
@@ -402,12 +425,14 @@ public static class MatchaSceneBuilder
         var trayRect = rects["Tray"];
         Hint(shop, trayRect.x - 6, trayRect.y - 3, "T", dimCream);
         Hint(recipe, 393, 174, "TAB", dimCream);
+        HintRight(recipe, 471, 187, "< >", dimInk); // arrow keys switch tickets
         HintRight(continueRt, 137, 2, "ENTER", dimCream);
         HintRight((RectTransform)newGameButton.transform, 137, 2, "N", dimInk);
         HintRight((RectTransform)nextDayButton.transform, 97, 2, "ENTER", dimCream);
 
         keys.game = bindings.ToArray();
         keys.recipePanel = panel;
+        keys.customers = customers;
         keys.title = title;
         keys.continueButton = continueButton;
         keys.newGameButton = newGameButton;
@@ -602,16 +627,26 @@ public static class MatchaSceneBuilder
     }
 
     // Creates a snack asset the first time; after that it keeps whatever was edited in the Inspector.
-    static Snack EnsureSnack(string name, string layer, bool hot, int price)
+    static Snack EnsureSnack(string name, string layer, bool hot, int price, string ticketName)
     {
         var path = $"{SnackDir}/{name}.asset";
         var snack = AssetDatabase.LoadAssetAtPath<Snack>(path);
-        if (snack != null) return snack;
+        if (snack != null)
+        {
+            // snacks made before tickets existed get a short name too
+            if (string.IsNullOrEmpty(snack.ticketName))
+            {
+                snack.ticketName = ticketName;
+                EditorUtility.SetDirty(snack);
+            }
+            return snack;
+        }
         Directory.CreateDirectory(SnackDir);
         snack = ScriptableObject.CreateInstance<Snack>();
         snack.displayName = name;
         snack.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(LayerDir + layer + ".png");
         snack.needsHeating = hot;
+        snack.ticketName = ticketName;
         snack.price = price;
         AssetDatabase.CreateAsset(snack, path);
         return snack;

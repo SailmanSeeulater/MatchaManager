@@ -128,6 +128,8 @@ def main():
     # closing time: little arpeggio down to the root
     save("DayEnd", seq(*(tone(NOTE[n], d, "triangle", 0.45, decay=d * 0.8) for n, d in
                          [("G5", 0.1), ("E5", 0.1), ("C5", 0.1), ("D5", 0.1), ("C5", 0.4)])))
+    # a customer's order goes up as a ticket: two quick "noted!" blips
+    save("Order", seq(tone(NOTE["C6"], 0.05, "triangle", 0.4, decay=0.04), silence(0.02), tone(NOTE["G6"], 0.09, "triangle", 0.4, decay=0.06)))
     # opening: quick rising arpeggio
     save("DayStart", seq(*(tone(NOTE[n], d, "triangle", 0.45, decay=d * 0.8) for n, d in
                            [("C5", 0.07), ("E5", 0.07), ("G5", 0.07), ("C6", 0.3)])))

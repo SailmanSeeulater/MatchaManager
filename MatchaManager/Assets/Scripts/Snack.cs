@@ -7,10 +7,14 @@ using UnityEngine;
 public class Snack : ScriptableObject
 {
     public string displayName;
+    [Tooltip("Short name for the small order tickets, e.g. CAKE (blank = the full name)")]
+    public string ticketName;
     public Sprite sprite;
     [Tooltip("Must be heated in the microwave or toaster oven before serving")]
     public bool needsHeating;
     public int price = 3;
+
+    public string TicketName => string.IsNullOrEmpty(ticketName) ? displayName : ticketName;
 }
 
 // How a snack came out. Cold-case snacks are None.

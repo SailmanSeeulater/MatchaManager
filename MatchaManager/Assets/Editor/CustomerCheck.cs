@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-// Headless check for customers and orders: serves a correct drink, a wrong one,
+// Headless check for customers and orders: serves a correct drink, one nobody ordered (it stays in the cup),
 // lets one customer time out, heats danishes (cold / warm / burnt), and checks
 // that random orders can be made correctly.
 // Run: Unity -batchmode -quit -projectPath . -executeMethod CustomerCheck.Run -captureOut out.png
@@ -44,13 +44,14 @@ public static class CustomerCheck
         customers.Tick(5); customers.Tick(5); customers.Tick(5);
         Log("after leaving");
 
-        // 2. wrong drink: extra milk nobody asked for
+        // 2. a drink nobody ordered (extra milk): it stays in the cup and the customer keeps waiting
         customers.Arrive(new Order(sunday));
         customers.Tick(1);
         Make("Ceremonial Matcha", "Water", "Oat Milk", "Whole Milk", "Stevia");
         Log("wrong drink");
         cup.Serve();
         Log("served wrong");
+        Debug.Log($"[Check] cup after unmatched serve: empty={cup.IsEmpty} readout='{cup.readout.text.Replace("\n", " / ")}' waiting={customers.WaitingCount}");
         cup.Clear();
         customers.Tick(5); customers.Tick(5);
 
@@ -128,7 +129,7 @@ public static class CustomerCheck
         Log("tray: " + what);
         int before = customers.Coins;
         cup.Serve();
-        Debug.Log($"[Check] {what,-20} -> '{customers.orderText.text.Replace("\n", " ")}' paid={customers.Coins - before} trayAfter={(snacks.TraySnack != null ? snacks.TraySnack.displayName : "empty")}");
+        Debug.Log($"[Check] {what,-20} -> '{customers.LastReaction?.Replace("\n", " ")}' paid={customers.Coins - before} trayAfter={(snacks.TraySnack != null ? snacks.TraySnack.displayName : "empty")}");
         customers.Tick(5); customers.Tick(5);
     }
 
@@ -152,8 +153,8 @@ public static class CustomerCheck
 
     static void Log(string step)
     {
-        Debug.Log($"[Check] {step,-16} order='{customers.orderText.text.Replace("\n", " / ")}' " +
-                  $"patience={customers.patienceFill.fillAmount:0.00} serve={(cup.serveButton.interactable ? "on" : "off")} " +
+        Debug.Log($"[Check] {step,-16} reaction='{customers.LastReaction?.Replace("\n", " / ")}' waiting={customers.WaitingCount} " +
+                  $"patience={customers.SelectedPatience:0.00} serve={(cup.serveButton.interactable ? "on" : "off")} " +
                   $"coins={customers.coinsText.text} {customers.servedText.text}\n" +
                   $"        recipe: {customers.recipePanel.title.text} :: {customers.recipePanel.body.text.Replace("\n", " / ")}");
     }

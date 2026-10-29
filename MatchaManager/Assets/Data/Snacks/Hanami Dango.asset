@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Hanami Dango
   m_EditorClassIdentifier: Assembly-CSharp::Snack
   displayName: Hanami Dango
+  ticketName: Dango
   sprite: {fileID: 21300000, guid: 9a3bf8639aab84aabade5b2b2eb5ccd7, type: 3}
   needsHeating: 0
   price: 3

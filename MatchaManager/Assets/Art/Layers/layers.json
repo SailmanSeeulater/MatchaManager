@@ -387,8 +387,17 @@
     "duration": 100
    },
    {
+    "filename": "Ticket",
+    "frame": { "x": 0, "y": 2423, "w": 41, "h": 33 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 14, "y": 22, "w": 41, "h": 33 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 100
+   },
+   {
     "filename": "Title_Card",
-    "frame": { "x": 0, "y": 2423, "w": 240, "h": 190 },
+    "frame": { "x": 0, "y": 2456, "w": 240, "h": 190 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 120, "y": 34, "w": 240, "h": 190 },
@@ -397,7 +406,7 @@
    },
    {
     "filename": "Frame",
-    "frame": { "x": 0, "y": 2613, "w": 478, "h": 257 },
+    "frame": { "x": 0, "y": 2646, "w": 478, "h": 257 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 1, "y": 1, "w": 478, "h": 257 },
@@ -409,7 +418,7 @@
   "app": "https://www.aseprite.org/",
   "version": "1.3.18.6-arm64",
   "format": "RGBA8888",
-  "size": { "w": 480, "h": 2870 },
+  "size": { "w": 480, "h": 2903 },
   "scale": "1"
  }
 }

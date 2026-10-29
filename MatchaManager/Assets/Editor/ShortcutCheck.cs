@@ -62,7 +62,7 @@ public static class ShortcutCheck
         Debug.Log($"[Check] after TAB: {panel.Current} :: {panel.body.text.Replace("\n", " / ")}");
         int before = customers.Coins;
         Type("SPACE");
-        Debug.Log($"[Check] SPACE -> '{customers.orderText.text.Replace("\n", " ")}' paid={customers.Coins - before}");
+        Debug.Log($"[Check] SPACE -> '{customers.LastReaction?.Replace("\n", " ")}' paid={customers.Coins - before}");
 
         Type("SPACE");
         Debug.Log($"[Check] SPACE with empty cup -> served today={customers.Today.served}");

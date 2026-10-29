@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Danish
   m_EditorClassIdentifier: Assembly-CSharp::Snack
   displayName: Danish
+  ticketName: Danish
   sprite: {fileID: 21300000, guid: 77b7ad5967b24418884c2167196ac252, type: 3}
   needsHeating: 1
   price: 3

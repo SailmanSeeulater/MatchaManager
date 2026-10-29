@@ -9,6 +9,7 @@ using UnityEngine.UI;
 //   SPACE      serve                            X                pour the cup out
 //   Q W E      cold snacks    R  microwave      T                toss the tray's snack
 //   A S D      hot snacks     F  toaster oven   TAB              switch MENU / RECIPE
+//   LEFT / RIGHT  switch which waiting customer's ticket the recipe panel shows
 // On the title: ENTER = continue (or new game without a save), N = new game.
 // On the summary: ENTER or SPACE = next day. F1 hides or shows the key hints.
 // A key "presses" its button like a mouse click would (with the pressed flash),
@@ -26,6 +27,7 @@ public class KeyboardShortcuts : MonoBehaviour
     [Tooltip("Shortcuts while the shop is open")]
     public Binding[] game;
     public RecipePanel recipePanel;
+    public CustomerManager customers;
 
     [Header("Overlays")]
     public TitleScreen title;
@@ -60,6 +62,11 @@ public class KeyboardShortcuts : MonoBehaviour
 
         foreach (var b in game)
             if (Pressed(kb, b.key, b.altKey)) Press(b.button);
+        if (customers != null)
+        {
+            if (kb.leftArrowKey.wasPressedThisFrame) customers.SelectNext(-1);
+            if (kb.rightArrowKey.wasPressedThisFrame) customers.SelectNext(1);
+        }
         if (kb.tabKey.wasPressedThisFrame && recipePanel != null)
             Press(recipePanel.Current == RecipePanel.Tab.Menu ? recipePanel.recipeTab : recipePanel.menuTab);
     }

@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Matcha Roll
   m_EditorClassIdentifier: Assembly-CSharp::Snack
   displayName: Matcha Roll
+  ticketName: Roll
   sprite: {fileID: 21300000, guid: c61bab5c3ca494fc2b733732bbf83c81, type: 3}
   needsHeating: 0
   price: 3
