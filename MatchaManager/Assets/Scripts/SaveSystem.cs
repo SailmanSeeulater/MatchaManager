@@ -8,6 +8,7 @@ using UnityEngine;
 public class SaveData
 {
     public int day = 1;
+    public int difficulty = 1;  // 0 easy, 1 medium, 2 hard (saves from before difficulties count as medium)
     public int coins;
     public int bestHappy;     // most happy customers in one day
     public int totalServed;

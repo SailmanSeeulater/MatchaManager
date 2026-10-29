@@ -4,9 +4,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The bottom-right notebook. RECIPE shows the current order as a checklist
-// (filled in by CustomerManager). MENU lists every drink and snack with its
-// price; click one to read how it's made, click the title to go back.
+// The bottom-right notebook. RECIPE shows the selected customer's order as a
+// checklist (filled in by CustomerManager); < and > switch between customers.
+// MENU lists every drink and snack with its price (drinks page with MORE when
+// there are too many); click one to read how it's made, click the title to go back.
 public class RecipePanel : MonoBehaviour
 {
     public enum Tab { Menu, Recipe }
@@ -16,6 +17,8 @@ public class RecipePanel : MonoBehaviour
     public TMP_Text title;
     public Button titleButton;   // "back" while reading a menu item
     public TMP_Text body;
+    public Button prevCustomer;
+    public Button nextCustomer;
 
     [Header("Menu list")]
     public TMP_Text drinkHeader;
@@ -32,6 +35,9 @@ public class RecipePanel : MonoBehaviour
     Object detail; // DrinkRecipe or Snack being read on the menu, null = the list
     string orderTitle = "NO ORDER YET";
     string orderBody = "WAITING FOR A CUSTOMER...";
+    int orderRows;
+    int drinkPage;
+    float normalSpacing = float.NaN;
 
     public Tab Current => tab;
     public Object Detail => detail;
@@ -44,6 +50,8 @@ public class RecipePanel : MonoBehaviour
         menuTab.onClick.AddListener(() => ShowTab(Tab.Menu));
         recipeTab.onClick.AddListener(() => ShowTab(Tab.Recipe));
         titleButton.onClick.AddListener(BackToMenu);
+        prevCustomer.onClick.AddListener(() => customers.SelectNext(-1));
+        nextCustomer.onClick.AddListener(() => customers.SelectNext(1));
         for (int i = 0; i < drinkRows.Length; i++)
         {
             int index = i;
@@ -61,23 +69,38 @@ public class RecipePanel : MonoBehaviour
     {
         tab = t;
         detail = null;
+        drinkPage = 0;
         Refresh();
     }
 
     // Called by CustomerManager whenever the order or the cup/tray changes.
-    public void SetOrder(string orderTitle, string orderBody)
+    // Long checklists (finicky orders) are packed onto tighter lines so they still fit.
+    public void SetOrder(string orderTitle, string orderBody, int rows = 0)
     {
         this.orderTitle = orderTitle;
         this.orderBody = orderBody;
+        orderRows = rows;
         if (tab == Tab.Recipe) Refresh();
     }
 
-    public void ClickDrink(int index)
+    public void ClickDrink(int row)
     {
+        if (DrinksPaged && row == drinkRows.Length - 1)
+        {
+            drinkPage = (drinkPage + 1) % DrinkPages;
+            Refresh();
+            return;
+        }
+        int index = drinkPage * DrinksPerPage + row;
         if (index >= Drinks.Count) return;
         detail = Drinks[index];
         Refresh();
     }
+
+    // More drinks than rows: the last row becomes "MORE" and flips pages.
+    bool DrinksPaged => Drinks.Count > drinkRows.Length;
+    int DrinksPerPage => DrinksPaged ? drinkRows.Length - 1 : drinkRows.Length;
+    int DrinkPages => Mathf.CeilToInt(Drinks.Count / (float)DrinksPerPage);
 
     public void ClickSnack(int index)
     {
@@ -100,8 +123,18 @@ public class RecipePanel : MonoBehaviour
         bool list = tab == Tab.Menu && detail == null;
         drinkHeader.gameObject.SetActive(list);
         snackHeader.gameObject.SetActive(list);
-        FillRows(drinkRows, list ? Drinks.Select(d => (d.displayName.ToUpper(), d.price)).ToList() : null);
-        FillRows(snackRows, list ? Snacks.Select(s => ((s.needsHeating ? "HOT " : "") + s.displayName.ToUpper(), s.price)).ToList() : null);
+        var drinks = Drinks.Skip(drinkPage * DrinksPerPage).Take(DrinksPerPage).Select(d => (d.displayName.ToUpper(), d.price.ToString())).ToList();
+        if (DrinksPaged) drinks.Add(($"<color=#2e5222>MORE {drinkPage + 1}/{DrinkPages}</color>", ""));
+        FillRows(drinkRows, list ? drinks : null);
+        FillRows(snackRows, list ? Snacks.Select(s => ((s.needsHeating ? "HOT " : "") + s.displayName.ToUpper(), s.price.ToString())).ToList() : null);
+
+        bool recipe = tab == Tab.Recipe;
+        prevCustomer.gameObject.SetActive(recipe);
+        nextCustomer.gameObject.SetActive(recipe);
+        prevCustomer.interactable = nextCustomer.interactable = customers.WaitingCount > 1;
+        if (float.IsNaN(normalSpacing)) normalSpacing = body.lineSpacing;
+        // finicky orders: 6 rows fit normally, 7 with no gap, up to 9 packed 1px tighter
+        body.lineSpacing = !recipe || orderRows <= 6 ? normalSpacing : orderRows == 7 ? 0 : -100f / PixelPx;
 
         if (tab == Tab.Recipe)
         {
@@ -126,7 +159,9 @@ public class RecipePanel : MonoBehaviour
     }
 
     // Rows past the end of the list (or all of them when entries is null) are hidden.
-    static void FillRows(Button[] rows, List<(string name, int price)> entries)
+    const float PixelPx = 7; // pixel font line height
+
+    static void FillRows(Button[] rows, List<(string name, string price)> entries)
     {
         for (int i = 0; i < rows.Length; i++)
         {
@@ -134,7 +169,7 @@ public class RecipePanel : MonoBehaviour
             rows[i].gameObject.SetActive(show);
             if (!show) continue;
             ((TMP_Text)rows[i].targetGraphic).text = entries[i].name;
-            rows[i].transform.Find("Price").GetComponent<TMP_Text>().text = entries[i].price.ToString();
+            rows[i].transform.Find("Price").GetComponent<TMP_Text>().text = entries[i].price;
         }
     }
 

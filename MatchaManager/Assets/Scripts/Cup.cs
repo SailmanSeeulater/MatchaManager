@@ -8,7 +8,7 @@ using UnityEngine.UI;
 // The drink being made. Each added portion stacks a layer inside the glass
 // (contents is masked to the glass shape): liquids are smooth with a lighter
 // surface line, powders are grainy, and ice adds cubes that float in front of
-// everything. Serve hands the drink off and empties the cup; clicking the glass pours it out.
+// everything. Serve hands the drink off and empties the cup; DUMP pours it out (at a patience cost).
 public class Cup : MonoBehaviour
 {
     public RectTransform contents;
@@ -31,6 +31,8 @@ public class Cup : MonoBehaviour
     // Asked before serving: who takes this drink? Returns false if nobody ordered it,
     // and then the drink stays in the cup. Null = anyone takes anything.
     public Func<Dictionary<DrinkNode, int>, bool> Recipient;
+    // Fires when the player dumps a drink to start over (customers lose patience).
+    public event Action Dumped;
     // Fires whenever the contents change.
     public event Action Changed;
 
@@ -159,12 +161,13 @@ public class Cup : MonoBehaviour
         Served?.Invoke(drink);
     }
 
-    // Clicking the glass: tip the drink out.
+    // The DUMP button: tip the drink out and start over. Costs every waiting customer some patience.
     public void PourOut()
     {
         if (IsEmpty) return;
         SoundFX.Play(Sfx.Dump);
         Clear();
+        Dumped?.Invoke();
     }
 
     public void Clear()

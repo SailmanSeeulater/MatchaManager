@@ -35,8 +35,6 @@ public class Order
         public bool Correct => lineOk.All(ok => ok) && extras.Count == 0;
     }
 
-    public const float SnackChance = 0.4f;
-
     public readonly DrinkRecipe recipe;
     public readonly Snack snack; // null = drink only
     public readonly List<Line> lines;
@@ -54,19 +52,28 @@ public class Order
 
     // Coins for getting it right, before the tip.
     public int Price => recipe.price + (snack != null ? snack.price : 0);
-    // Hot snacks take a while, so customers wait longer for them.
-    public float PatienceSeconds => recipe.patienceSeconds + (snack != null && snack.needsHeating ? 10 : 0);
 
-    // Recipe with 0-2 random changes: leave out an optional line, extra of something, or a specific choice for an "any" line.
-    public static Order Random(DrinkRecipe recipe, IList<Snack> snacks)
+    // Recipe plus random changes: NO (an optional line), EXTRA (one more portion, sometimes two),
+    // WITH (a specific choice for an "any" line) or ADD (a small extra the recipe doesn't have).
+    // Each change is rolled after the last one succeeds, so long lists are rarer; how often and how many
+    // come from Balance and grow with the day. Defaults are used without a Balance.
+    public static Order Random(DrinkRecipe recipe, IList<Snack> snacks, Balance balance = null, int day = 1,
+        IList<DrinkNode> addable = null)
     {
-        var snack = snacks.Count > 0 && UnityEngine.Random.value < SnackChance
+        float snackChance = balance != null ? balance.snackChance : 0.4f;
+        float changeChance = balance != null ? balance.ChangeChance(day) : 0.5f;
+        int maxChanges = balance != null ? balance.maxChanges : 2;
+        float addChance = balance != null ? balance.addChance : 0f;
+        float doubleChance = balance != null ? balance.doubleExtraChance : 0f;
+
+        var snack = snacks.Count > 0 && UnityEngine.Random.value < snackChance
             ? snacks[UnityEngine.Random.Range(0, snacks.Count)] : null;
         var order = new Order(recipe, snack);
-        int changes = UnityEngine.Random.value < 0.4f ? 0 : UnityEngine.Random.value < 0.7f ? 1 : 2;
         var untouched = Enumerable.Range(0, order.lines.Count).ToList();
-        for (int c = 0; c < changes && untouched.Count > 0; c++)
+        for (int c = 0; c < maxChanges && UnityEngine.Random.value < changeChance; c++)
         {
+            if (addable != null && UnityEngine.Random.value < addChance && order.TryAdd(addable)) continue;
+            if (untouched.Count == 0) break;
             int pick = UnityEngine.Random.Range(0, untouched.Count);
             int i = untouched[pick];
             untouched.RemoveAt(pick);
@@ -84,8 +91,9 @@ public class Order
                     break;
                 case 1:
                     order.Specify(line);
-                    line.portions++;
-                    order.requests.Add("EXTRA " + line.Name);
+                    int more = UnityEngine.Random.value < doubleChance ? 2 : 1;
+                    line.portions += more;
+                    order.requests.Add("EXTRA " + line.Name + (more > 1 ? " x2" : ""));
                     break;
                 case 2:
                     order.Specify(line);
@@ -96,11 +104,24 @@ public class Order
         return order;
     }
 
-    // "any milk" -> a random milk
+    // ADD: one portion of something small the order doesn't already cover
+    bool TryAdd(IList<DrinkNode> addable)
+    {
+        var options = addable.Where(n => !lines.Any(l => l.node.Ingredients().Contains(n))).ToList();
+        if (options.Count == 0) return false;
+        var pick = options[UnityEngine.Random.Range(0, options.Count)];
+        lines.Add(new Line { node = pick, portions = 1 });
+        requests.Add("ADD " + pick.displayName.ToUpper());
+        return true;
+    }
+
+    // "any milk" -> a random milk (not one another line already asks for, e.g. an ADD)
     void Specify(Line line)
     {
         if (!line.IsAny) return;
-        var options = line.node.Ingredients().ToList();
+        var taken = lines.Where(l => l != line && !l.IsAny).Select(l => l.node).ToList();
+        var options = line.node.Ingredients().Where(n => !taken.Contains(n)).ToList();
+        if (options.Count == 0) options = line.node.Ingredients().ToList();
         line.node = options[UnityEngine.Random.Range(0, options.Count)];
         line.label = null;
     }

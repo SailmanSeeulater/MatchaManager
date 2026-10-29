@@ -41,6 +41,8 @@ public static class MatchaSceneBuilder
     {
         LoadRects();
         pixelFont = PixelFontBuilder.Build();
+        var difficulties = EnsureDifficulties();
+        var balance = difficulties[1]; // medium until a game picks one
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
         var camGo = new GameObject("Main Camera");
@@ -170,14 +172,17 @@ public static class MatchaSceneBuilder
         // layers stack inside the glass shape: Cup_Mask is the glass interior
         var contents = AddImage(drink, "Cup_Mask", "CupContents");
         contents.gameObject.AddComponent<Mask>().showMaskGraphic = false;
-        // clicking the glass pours the drink out
-        var glass = AddButton(drink, "Cup");
+        AddImage(drink, "Cup");
+        // DUMP starts the drink over, at a patience cost to everyone waiting
+        var dump = AddButton(drink, "Dump_Button");
+        var dumpRect = rects["Dump_Button"];
+        AddText(drink, "DumpLabel", dumpRect.x - 3, 127, dumpRect.w + 6, 8, "DUMP", Px, Ink, TextAlignmentOptions.Center);
         var serve = AddButton(drink, "Serve_Button");
 
         var cup = contents.gameObject.AddComponent<Cup>();
         cup.contents = contents;
         cup.serveButton = serve.GetComponent<Button>();
-        cup.dumpButton = glass.GetComponent<Button>();
+        cup.dumpButton = dump.GetComponent<Button>();
         cup.readout = readout;
         cup.powderGrain = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Cup/Powder_Grain.png");
         cup.iceCube = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Cup/Ice_Cube.png");
@@ -238,6 +243,8 @@ public static class MatchaSceneBuilder
             new SnackStation.Appliance { name = "MICROWAVE", button = micro.GetComponent<Button>(), timerText = microTimer, snackImage = microSnack, readySeconds = 4, burnSeconds = 8 },
             new SnackStation.Appliance { name = "TOASTER OVEN", button = oven.GetComponent<Button>(), timerText = ovenTimer, snackImage = ovenSnack, readySeconds = 7, burnSeconds = 16 },
         };
+        snacks.balance = balance;
+        snacks.ApplyBalance();
         snacks.trayButton = tray.GetComponent<Button>();
         snacks.trayImage = traySnack;
 
@@ -249,7 +256,10 @@ public static class MatchaSceneBuilder
         var tabRecipe = AddButton(recipe, "Tab_Recipe");
         AddText(tabRecipe, "Label", 0, 0, 46, 13, "RECIPE", Px, Ink, TextAlignmentOptions.Center);
         AddImage(recipe, "Recipe_Paper");
-        var recipeTitle = AddText(recipe, "RecipeTitle", 318, 186, 150, 9, "SUNDAY MATCHA", Px, MatchaDark, TextAlignmentOptions.Left);
+        var recipeTitle = AddText(recipe, "RecipeTitle", 318, 186, 128, 9, "SUNDAY MATCHA", Px, MatchaDark, TextAlignmentOptions.Left);
+        // < > switch between waiting customers' recipes (arrow keys too)
+        var prevCustomer = AddTextButton(recipe, "PrevCustomer", 452, 186, 8, 9, "<");
+        var nextCustomer = AddTextButton(recipe, "NextCustomer", 462, 186, 8, 9, ">");
         recipeTitle.raycastTarget = true;
         var titleButton = recipeTitle.gameObject.AddComponent<Button>();
         titleButton.transition = Selectable.Transition.None;
@@ -276,6 +286,8 @@ public static class MatchaSceneBuilder
         panel.title = recipeTitle;
         panel.titleButton = titleButton;
         panel.body = recipeBody;
+        panel.prevCustomer = prevCustomer;
+        panel.nextCustomer = nextCustomer;
         panel.drinkHeader = drinkHeader;
         panel.snackHeader = snackHeader;
         panel.drinkRows = drinkRows;
@@ -306,6 +318,8 @@ public static class MatchaSceneBuilder
                 .Select(g => AssetDatabase.LoadAssetAtPath<DrinkRecipe>(AssetDatabase.GUIDToAssetPath(g)))
                 .OrderBy(r => r.name).ToList();
         if (customers.recipes.Count == 0) Debug.LogWarning("[Matcha] No recipes yet: run Matcha > Import Drink Tree, then rebuild.");
+        customers.balance = balance;
+        customers.drinkTree = browser.root;
         customers.cup = cup;
         customers.snacks = snacks;
         customers.customer = customer;
@@ -335,6 +349,8 @@ public static class MatchaSceneBuilder
         summary.gameObject.SetActive(false);
 
         var day = screen.gameObject.AddComponent<DayCycle>();
+        day.balance = balance;
+        day.difficulties = difficulties;
         day.customers = customers;
         day.cup = cup;
         day.snacks = snacks;
@@ -349,11 +365,12 @@ public static class MatchaSceneBuilder
         var titleRoot = AddRect(screen, "TitleScreen", 0, 0, RefWidth, RefHeight, new Color(0.06f, 0.05f, 0.1f, 0.75f));
         titleRoot.GetComponent<Image>().raycastTarget = true;
         AddImage(titleRoot, "Title_Card");
-        var continueButton = AddRectButton(titleRoot, "ContinueButton", 170, 150, 140, 28, Hex("6fa04a"));
+        var mainPage = Group(titleRoot, "MainPage");
+        var continueButton = AddRectButton(mainPage, "ContinueButton", 170, 150, 140, 28, Hex("6fa04a"));
         var continueRt = (RectTransform)continueButton.transform;
         AddText(continueRt, "Label", 0, 3, 140, 13, "CONTINUE", Px2, Cream, TextAlignmentOptions.Center);
         var continueInfo = AddText(continueRt, "Info", 0, 17, 140, 9, "DAY 1  -  0 COINS", Px, Cream, TextAlignmentOptions.Center);
-        var newGameButton = AddRectButton(titleRoot, "NewGameButton", 170, 186, 140, 20, Hex("e0d2b2"));
+        var newGameButton = AddRectButton(mainPage, "NewGameButton", 170, 186, 140, 20, Hex("e0d2b2"));
         var newGameLabel = AddText((RectTransform)newGameButton.transform, "Label", 0, 0, 140, 20, "NEW GAME", Px2, Ink, TextAlignmentOptions.Center);
         var title = titleRoot.gameObject.AddComponent<TitleScreen>();
         title.day = day;
@@ -361,6 +378,24 @@ public static class MatchaSceneBuilder
         title.continueInfo = continueInfo;
         title.newGameButton = newGameButton;
         title.newGameLabel = newGameLabel;
+        // difficulty page: name on the left, what it means on the right
+        var difficultyPage = Group(titleRoot, "DifficultyPage");
+        string[] difficultyColors = { "6fa04a", "c9a227", "b8423f" };
+        var difficultyButtons = new Button[difficulties.Length];
+        for (int i = 0; i < difficulties.Length; i++)
+        {
+            var b = AddRectButton(difficultyPage, "Difficulty_" + difficulties[i].difficultyName, 170, 148 + 19 * i, 140, 16, Hex(difficultyColors[i]));
+            var rt = (RectTransform)b.transform;
+            AddText(rt, "Name", 5, 1, 60, 14, difficulties[i].difficultyName, Px2, Cream, TextAlignmentOptions.Left);
+            AddText(rt, "About", 50, 4, 86, 8, difficulties[i].description, Px, Cream, TextAlignmentOptions.Right);
+            difficultyButtons[i] = b;
+        }
+        var backButton = AddTextButton(difficultyPage, "Back", 170, 207, 40, 9, "< BACK");
+        difficultyPage.gameObject.SetActive(false);
+        title.mainPage = mainPage.gameObject;
+        title.difficultyPage = difficultyPage.gameObject;
+        title.difficultyButtons = difficultyButtons;
+        title.backButton = backButton;
         day.title = title;
 
         // --- Sound ---
@@ -405,9 +440,8 @@ public static class MatchaSceneBuilder
         Bind(Key.Space, Key.Enter, serve);
         var serveRect = rects["Serve_Button"];
         Hint(drink, serveRect.x + serveRect.w / 2f - 10, 119, "SPACE", dimInk); // just above the SERVE label
-        Bind(Key.X, Key.None, glass);
-        var cupRect = rects["Cup"];
-        Hint(drink, cupRect.x - 7, cupRect.y + cupRect.h - 7, "X", dimInk);
+        Bind(Key.X, Key.None, dump);
+        Hint(drink, dumpRect.x + dumpRect.w / 2f - 1, 119, "X", dimInk); // above the DUMP label
 
         Key[] snackKeys = { Key.Q, Key.W, Key.E, Key.A, Key.S, Key.D };
         for (int i = 0; i < snackSlots.Count; i++)
@@ -425,7 +459,6 @@ public static class MatchaSceneBuilder
         var trayRect = rects["Tray"];
         Hint(shop, trayRect.x - 6, trayRect.y - 3, "T", dimCream);
         Hint(recipe, 393, 174, "TAB", dimCream);
-        HintRight(recipe, 471, 187, "< >", dimInk); // arrow keys switch tickets
         HintRight(continueRt, 137, 2, "ENTER", dimCream);
         HintRight((RectTransform)newGameButton.transform, 137, 2, "N", dimInk);
         HintRight((RectTransform)nextDayButton.transform, 97, 2, "ENTER", dimCream);
@@ -588,6 +621,25 @@ public static class MatchaSceneBuilder
         return rt;
     }
 
+    // Clickable text: ink normally, green on hover (like the menu rows, without a price).
+    static Button AddTextButton(RectTransform parent, string name, float x, float y, float w, float h, string text)
+    {
+        var label = AddText(parent, name, x, y, w, h, text, Px, Color.white, TextAlignmentOptions.Left);
+        label.raycastTarget = true;
+        var btn = label.gameObject.AddComponent<Button>();
+        btn.targetGraphic = label;
+        var colors = btn.colors;
+        colors.normalColor = Ink;
+        colors.highlightedColor = Hex("3f6b2e");
+        colors.pressedColor = MatchaDark;
+        colors.selectedColor = Ink;
+        colors.disabledColor = new Color(Ink.r, Ink.g, Ink.b, 0.25f);
+        colors.fadeDuration = 0.05f;
+        btn.colors = colors;
+        btn.navigation = new Navigation { mode = Navigation.Mode.None };
+        return btn;
+    }
+
     // A clickable line of text on the menu, with its price in a right-hand column.
     // The text itself is the button's graphic: ink normally, green on hover.
     static Button AddMenuRow(RectTransform parent, string name, float x, float y)
@@ -624,6 +676,48 @@ public static class MatchaSceneBuilder
         img.raycastTarget = false;
         img.enabled = false;
         return img;
+    }
+
+    // Medium keeps the original Balance.asset path, so tuning done before difficulties carries over.
+    public static readonly string[] DifficultyPaths =
+        { "Assets/Data/Balance Easy.asset", "Assets/Data/Balance.asset", "Assets/Data/Balance Hard.asset" };
+
+    // One Balance asset per difficulty; each is created once with these presets, then it's yours to tune.
+    public static Balance[] EnsureDifficulties()
+    {
+        var presets = new System.Action<Balance>[]
+        {
+            b =>
+            {
+                b.difficultyName = "EASY"; b.description = "PATIENT, SIMPLE ORDERS";
+                b.arrivalInterval = new Vector2(18, 28); b.patienceMultiplier = 1.7f; b.hotSnackExtraPatience = 15; b.linePatienceRate = 0.3f;
+                b.snackChance = 0.3f; b.changeChance = 0.3f; b.changeChancePerDay = 0.02f; b.maxChangeChance = 0.5f; b.maxChanges = 1;
+                b.addChance = 0; b.doubleExtraChance = 0; b.tipMultiplier = 1.2f;
+                b.harderPerDay = 0.05f; b.hardestAt = 0.6f; b.dailyGoal = 6; b.goalPerDay = 1; b.maxGoal = 16;
+                b.microwaveBurn = 10; b.ovenBurn = 20;
+            },
+            b => { }, // medium: the Balance defaults
+            b =>
+            {
+                b.difficultyName = "HARD"; b.description = "PICKY AND IN A HURRY";
+                b.arrivalInterval = new Vector2(11, 19); b.patienceMultiplier = 1.0f; b.hotSnackExtraPatience = 8; b.linePatienceRate = 0.5f;
+                b.snackChance = 0.5f; b.changeChance = 0.7f; b.changeChancePerDay = 0.05f; b.maxChangeChance = 0.95f; b.maxChanges = 4;
+                b.addChance = 0.35f; b.doubleExtraChance = 0.3f; b.tipMultiplier = 0.8f;
+                b.harderPerDay = 0.06f; b.hardestAt = 0.45f; b.dailyGoal = 10; b.goalPerDay = 2; b.maxGoal = 30;
+                b.microwaveBurn = 7; b.ovenBurn = 13;
+            },
+        };
+        var result = new Balance[DifficultyPaths.Length];
+        for (int i = 0; i < DifficultyPaths.Length; i++)
+        {
+            result[i] = AssetDatabase.LoadAssetAtPath<Balance>(DifficultyPaths[i]);
+            if (result[i] != null) continue;
+            Directory.CreateDirectory(Path.GetDirectoryName(DifficultyPaths[i]));
+            result[i] = ScriptableObject.CreateInstance<Balance>();
+            presets[i](result[i]);
+            AssetDatabase.CreateAsset(result[i], DifficultyPaths[i]);
+        }
+        return result;
     }
 
     // Creates a snack asset the first time; after that it keeps whatever was edited in the Inspector.

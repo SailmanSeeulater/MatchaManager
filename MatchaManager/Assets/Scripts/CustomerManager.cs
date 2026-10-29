@@ -22,6 +22,7 @@ public class CustomerManager : MonoBehaviour
     public class DayStats
     {
         public int served, happy, wrong, walkedOut, earned;
+        public int turnedAway; // saw the line was full and kept walking
     }
 
     public enum Stage { InLine, Ordering, Waiting, Leaving }
@@ -49,7 +50,10 @@ public class CustomerManager : MonoBehaviour
         [HideInInspector] public float patienceWidth;
     }
 
+    public Balance balance;
     public List<DrinkRecipe> recipes = new List<DrinkRecipe>();
+    [Tooltip("The drink tree root, for picking what orders can ADD")]
+    public DrinkNode drinkTree;
     public Cup cup;
     public SnackStation snacks;
     public RecipePanel recipePanel;
@@ -65,13 +69,11 @@ public class CustomerManager : MonoBehaviour
     [Header("Status bar")]
     public TMP_Text coinsText;
     public TMP_Text servedText;
-    [Tooltip("One dot lights up per happy customer today")]
+    [Tooltip("Lights up toward today's goal of happy customers")]
     public GameObject[] servedDots;
 
     [Header("Timing (seconds)")]
     public float fadeTime = 0.4f;
-    [Tooltip("How long the order bubble shows at the counter before they move to pickup")]
-    public float orderTime = 2f;
     public float reactTime = 1.6f;
     [Tooltip("Pause before the next in line steps up to the counter")]
     public Vector2 stepUpDelay = new Vector2(0.6f, 1.2f);
@@ -80,16 +82,14 @@ public class CustomerManager : MonoBehaviour
     [Tooltip("Spots in line, nearest the counter first")]
     public Image[] lineViews;
     public Sprite[] looks;
-    [Tooltip("Seconds between new customers walking in")]
-    public Vector2 arrivalInterval = new Vector2(8, 16);
-    [Tooltip("How fast patience drains in line compared to at pickup")]
-    public float linePatienceRate = 0.4f;
     [NonSerialized] public bool autoArrive = true; // the headless checks turn this off
 
     [Header("Set by DayCycle")]
     public bool open = true;          // new customers only come while open
     public float patienceScale = 1;   // < 1 = customers give up sooner
     public float arrivalScale = 1;    // < 1 = customers come more often
+    public int dailyGoal = 10;        // the served dots fill toward this
+    public int day = 1;               // orders get more finicky as days go by
 
     public int Coins { get; private set; }
     public DayStats Today { get; private set; } = new DayStats();
@@ -111,7 +111,8 @@ public class CustomerManager : MonoBehaviour
     public bool IsEmpty => atCounter == null && line.Count == 0 && waiting.All(p => p == null);
     public int LineLength => line.Count;
     public bool SomeoneOrdering => atCounter != null;
-    public int WaitingCount => waiting.Count(p => p != null && p.stage == Stage.Waiting);
+    public IEnumerable<Patron> WaitingPatrons => (waiting ?? new Patron[0]).Where(p => p != null && p.stage == Stage.Waiting);
+    public int WaitingCount => WaitingPatrons.Count();
     public Patron Selected => selected >= 0 ? waiting[selected] : null;
     public Order CurrentOrder => Selected?.order;
     public float SelectedPatience => Selected?.patience ?? 0;
@@ -124,6 +125,7 @@ public class CustomerManager : MonoBehaviour
     {
         if (waiting == null) waiting = new Patron[pickup.Length];
         cup.Recipient = TryServe;
+        cup.Dumped += DumpPenalty;
         cup.Changed += RefreshRecipe;
         if (snacks != null) snacks.Changed += RefreshRecipe;
         for (int i = 0; i < pickup.Length; i++)
@@ -174,13 +176,17 @@ public class CustomerManager : MonoBehaviour
         if (!autoArrive || !open || recipes.Count == 0) return;
         arrivalTimer -= dt;
         if (arrivalTimer > 0) return;
-        arrivalTimer = Random.Range(arrivalInterval.x, arrivalInterval.y) * arrivalScale;
+        arrivalTimer = Random.Range(balance.arrivalInterval.x, balance.arrivalInterval.y) * arrivalScale;
         if (line.Count < lineViews.Length)
         {
             line.Add(NewPatron());
             SoundFX.Play(Sfx.Arrive);
         }
-        else Debug.Log("[Customers] Line is full; someone saw it and kept walking");
+        else
+        {
+            Today.turnedAway++;
+            Debug.Log("[Customers] Line is full; someone saw it and kept walking");
+        }
         RefreshLine();
     }
 
@@ -191,7 +197,7 @@ public class CustomerManager : MonoBehaviour
         for (int i = line.Count - 1; i >= 0; i--)
         {
             var p = line[i];
-            p.patience -= dt * linePatienceRate / (p.order.PatienceSeconds * patienceScale);
+            p.patience -= dt * balance.linePatienceRate / PatienceSeconds(p.order);
             if (p.patience > 0) continue;
             line.RemoveAt(i);
             Today.walkedOut++;
@@ -205,9 +211,14 @@ public class CustomerManager : MonoBehaviour
 
     Patron NewPatron() => new Patron
     {
-        order = Order.Random(recipes[Random.Range(0, recipes.Count)], Menu),
+        order = Order.Random(recipes[Random.Range(0, recipes.Count)], Menu, balance, day, Addable),
         look = looks != null && looks.Length > 0 ? looks[Random.Range(0, looks.Length)] : null,
     };
+
+    // How long this order's customer waits at pickup before giving up (hot snacks take a while).
+    public float PatienceSeconds(Order order) =>
+        (order.recipe.patienceSeconds * balance.patienceMultiplier +
+         (order.snack != null && order.snack.needsHeating ? balance.hotSnackExtraPatience : 0)) * patienceScale;
 
     // ---- counter -----------------------------------------------------------
 
@@ -231,7 +242,7 @@ public class CustomerManager : MonoBehaviour
 
         atCounter.timer += dt;
         customer.alpha = orderUI.alpha = Mathf.Clamp01(atCounter.timer / fadeTime);
-        if (atCounter.timer < fadeTime + orderTime) return;
+        if (atCounter.timer < fadeTime + balance.orderSeconds) return;
         int spot = FreeSpot();
         if (spot < 0) return; // pickup filled up meanwhile; keep ordering until a spot frees up
         var p = atCounter;
@@ -241,11 +252,30 @@ public class CustomerManager : MonoBehaviour
         TakeOrder(p, spot);
     }
 
-    // e.g. "SUNDAY MATCHA / NO MILK / + DANISH", requests colored
+    // Small ingredients an order may ADD (sweeteners, syrups, ice), from Balance.addMaxPixels.
+    List<DrinkNode> addable;
+    List<DrinkNode> Addable => addable ??= drinkTree == null ? new List<DrinkNode>()
+        : drinkTree.Ingredients().Where(n => n.cupPixels <= balance.addMaxPixels).ToList();
+
+    // Dumping the cup makes everyone waiting a bit less patient.
+    public void DumpPenalty()
+    {
+        float penalty = balance.dumpPenalty;
+        foreach (var p in WaitingPatrons) p.patience -= penalty;
+        foreach (var p in line) p.patience -= penalty;
+        Debug.Log($"[Customers] Cup dumped: everyone waiting lost {penalty:P0} patience");
+        RefreshAll();
+    }
+
+    // e.g. "SUNDAY MATCHA / NO MILK / + DANISH", requests colored; long lists are cut short
+    // (the recipe panel always has every change)
     static string OrderLines(Order order)
     {
+        const int shown = 3;
         var lines = new List<string> { order.recipe.displayName.ToUpper() };
-        lines.AddRange(order.requests.Select(r => $"<color=#{(r.StartsWith("NO ") ? "8a2e2c" : "2e5222")}>{r}</color>"));
+        lines.AddRange(order.requests.Take(order.requests.Count > shown ? shown - 1 : shown)
+            .Select(r => $"<color=#{(r.StartsWith("NO ") ? "8a2e2c" : "2e5222")}>{r}</color>"));
+        if (order.requests.Count > shown) lines.Add($"<color=#8a2e2c>+{order.requests.Count - shown + 1} MORE</color>");
         if (order.snack != null) lines.Add("+ " + order.snack.displayName.ToUpper());
         return string.Join("\n", lines);
     }
@@ -272,10 +302,10 @@ public class CustomerManager : MonoBehaviour
         waiting[spot] = p;
         var s = pickup[spot];
         ShowLook(s.view, p.look);
-        // the ticket only has room for the name and snack; "!" means there are changes to check
-        s.ticketText.text = (p.order.requests.Count > 0 ? "<color=#8a2e2c>!</color> " : "") +
-                            p.order.recipe.displayName.ToUpper() +
-                            (p.order.snack != null ? "\n<color=#2e5222>+" + p.order.snack.TicketName.ToUpper() + "</color>" : "");
+        // the ticket only has room for the name, then "!" (changes to check on the recipe panel) and the snack
+        var extras = (p.order.requests.Count > 0 ? "<color=#8a2e2c>!</color> " : "") +
+                     (p.order.snack != null ? "<color=#2e5222>+" + p.order.snack.TicketName.ToUpper() + "</color>" : "");
+        s.ticketText.text = p.order.recipe.displayName.ToUpper() + (extras.Length > 0 ? "\n" + extras : "");
         s.group.alpha = 1;
         SoundFX.Play(Sfx.Order);
         if (Selected == null || Selected.stage != Stage.Waiting)
@@ -295,7 +325,7 @@ public class CustomerManager : MonoBehaviour
             var s = pickup[i];
             if (p.stage == Stage.Waiting)
             {
-                p.patience -= dt / (p.order.PatienceSeconds * patienceScale);
+                p.patience -= dt / PatienceSeconds(p.order);
                 RefreshPatience(i);
                 if (p.patience <= 0)
                 {
@@ -344,7 +374,7 @@ public class CustomerManager : MonoBehaviour
             SoundFX.Play(Sfx.ServeBad);
             return true;
         }
-        int paid = p.order.Price + Mathf.RoundToInt(p.order.Price * p.patience);
+        int paid = p.order.Price + Mathf.RoundToInt(p.order.Price * p.patience * balance.tipMultiplier);
         Coins += paid;
         Today.happy++;
         Today.earned += paid;
@@ -453,7 +483,8 @@ public class CustomerManager : MonoBehaviour
         if (coinsText != null) coinsText.text = Coins.ToString();
         if (servedText != null) servedText.text = $"SERVED {Today.served}";
         if (servedDots != null)
-            for (int i = 0; i < servedDots.Length; i++) servedDots[i].SetActive(i < Today.happy);
+            for (int i = 0; i < servedDots.Length; i++)
+                servedDots[i].SetActive(i < Today.happy * servedDots.Length / Mathf.Max(1, dailyGoal));
     }
 
     // Recipe panel: the selected ticket's lines, ticked off as the cup matches them.
@@ -479,8 +510,8 @@ public class CustomerManager : MonoBehaviour
         if (result.extras.Count > 0)
             rows.Add("<color=#8a2e2c>[!] NOT ORDERED: " +
                      string.Join(", ", result.extras.Select(n => n.displayName.ToUpper())) + "</color>");
-        string others = WaitingCount > 1 ? $" <color=#8a7a5a>({WaitingCount} WAITING)</color>" : "";
-        recipePanel.SetOrder($"#{p.spot + 1} {order.recipe.displayName.ToUpper()}{others}", string.Join("\n", rows));
+        string others = WaitingCount > 1 ? $" <color=#8a7a5a>{WaitingPatrons.Count(w => w.spot < p.spot) + 1}/{WaitingCount}</color>" : "";
+        recipePanel.SetOrder($"#{p.spot + 1} {order.recipe.displayName.ToUpper()}{others}", string.Join("\n", rows), rows.Count);
     }
 
     IList<Snack> Menu => snacks != null ? snacks.Menu : new Snack[0];

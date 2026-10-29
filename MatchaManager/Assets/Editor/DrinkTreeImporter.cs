@@ -68,6 +68,11 @@ public static class DrinkTreeImporter
         Recipe("Hojicha Latte", 5, 45, ("Hojicha", 1, null, false), ("Water", 1, null, false), ("Dairy", 1, "Milk", false), sweetener);
         Recipe("Iced Matcha", 5, 40, ("Ceremonial Matcha", 1, null, false), ("Water", 1, null, false), ("Ice", 1, null, false), sweetener);
         Recipe("Mocha", 6, 50, ("Coffee", 1, "Coffee", false), ("Chocolate", 1, "Chocolate", false), ("Dairy", 1, "Milk", false));
+        Recipe("Matcha Latte", 5, 40, ("Ceremonial Matcha", 1, null, false), ("Dairy", 1, "Milk", false), sweetener);
+        Recipe("London Fog", 6, 45, ("Earl Gray", 1, null, false), ("Water", 1, null, false), ("Dairy", 1, "Milk", false), ("Vanilla", 1, "Vanilla", true));
+        Recipe("Jasmine Milk Tea", 5, 40, ("Jasmine", 1, null, false), ("Water", 1, null, false), milk, sweetener);
+        Recipe("Iced Coffee", 5, 35, ("Coffee", 1, "Coffee", false), ("Ice", 1, null, false), ("Water", 1, null, false), milk, sweetener);
+        Recipe("Hot Chocolate", 5, 40, ("Chocolate", 2, "Chocolate", false), ("Dairy", 1, "Milk", false), sweetener);
     }
 
     static void Recipe(string name, int price, float patience, params (string node, int portions, string label, bool optional)[] lines)

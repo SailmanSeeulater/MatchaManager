@@ -10,7 +10,8 @@ using UnityEngine.UI;
 //   Q W E      cold snacks    R  microwave      T                toss the tray's snack
 //   A S D      hot snacks     F  toaster oven   TAB              switch MENU / RECIPE
 //   LEFT / RIGHT  switch which waiting customer's ticket the recipe panel shows
-// On the title: ENTER = continue (or new game without a save), N = new game.
+// On the title: ENTER = continue (or new game without a save), N = new game;
+// then 1 / 2 / 3 (or E / M / H) picks easy / medium / hard, ESC goes back.
 // On the summary: ENTER or SPACE = next day. F1 hides or shows the key hints.
 // A key "presses" its button like a mouse click would (with the pressed flash),
 // and does nothing while that button is greyed out.
@@ -49,6 +50,14 @@ public class KeyboardShortcuts : MonoBehaviour
 
         if (title != null && title.Showing)
         {
+            if (title.ChoosingDifficulty)
+            {
+                Key[][] keys = { new[] { Key.Digit1, Key.E }, new[] { Key.Digit2, Key.M }, new[] { Key.Digit3, Key.H } };
+                for (int i = 0; i < keys.Length && i < title.difficultyButtons.Length; i++)
+                    if (Pressed(kb, keys[i][0], keys[i][1])) Press(title.difficultyButtons[i]);
+                if (Pressed(kb, Key.Escape, Key.Backspace)) Press(title.backButton);
+                return;
+            }
             if (Pressed(kb, Key.Enter, Key.NumpadEnter))
                 Press(continueButton.interactable ? continueButton : newGameButton);
             if (kb.nKey.wasPressedThisFrame) Press(newGameButton);

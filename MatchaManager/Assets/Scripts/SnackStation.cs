@@ -36,6 +36,7 @@ public class SnackStation : MonoBehaviour
         public Heat Heat => time < readySeconds ? Heat.Underheated : time < burnSeconds ? Heat.Warm : Heat.Burnt;
     }
 
+    public Balance balance;
     public Slot[] slots;
     public Appliance[] appliances;
     public Button trayButton;
@@ -56,6 +57,7 @@ public class SnackStation : MonoBehaviour
 
     void Start()
     {
+        ApplyBalance();
         for (int i = 0; i < slots.Length; i++)
         {
             int index = i;
@@ -71,6 +73,16 @@ public class SnackStation : MonoBehaviour
     }
 
     void Update() => Tick(Time.deltaTime);
+
+    // Heating times come from Balance: appliance 0 is the microwave, 1 the toaster oven.
+    public void ApplyBalance()
+    {
+        if (balance == null || appliances.Length < 2) return;
+        appliances[0].readySeconds = balance.microwaveReady;
+        appliances[0].burnSeconds = balance.microwaveBurn;
+        appliances[1].readySeconds = balance.ovenReady;
+        appliances[1].burnSeconds = balance.ovenBurn;
+    }
 
     public void ClickSlot(int index)
     {

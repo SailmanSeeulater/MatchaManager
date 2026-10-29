@@ -225,8 +225,17 @@
     "duration": 100
    },
    {
+    "filename": "Dump_Button",
+    "frame": { "x": 0, "y": 1623, "w": 23, "h": 25 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 369, "y": 136, "w": 23, "h": 25 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 100
+   },
+   {
     "filename": "Prep_Station_Background",
-    "frame": { "x": 0, "y": 1623, "w": 297, "h": 88 },
+    "frame": { "x": 0, "y": 1648, "w": 297, "h": 88 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 2, "y": 169, "w": 297, "h": 88 },
@@ -235,7 +244,7 @@
    },
    {
     "filename": "Cold_Case",
-    "frame": { "x": 0, "y": 1711, "w": 181, "h": 35 },
+    "frame": { "x": 0, "y": 1736, "w": 181, "h": 35 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 6, "y": 171, "w": 181, "h": 35 },
@@ -244,7 +253,7 @@
    },
    {
     "filename": "Cold_Snack_1",
-    "frame": { "x": 0, "y": 1746, "w": 15, "h": 15 },
+    "frame": { "x": 0, "y": 1771, "w": 15, "h": 15 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 33, "y": 183, "w": 15, "h": 15 },
@@ -253,7 +262,7 @@
    },
    {
     "filename": "Cold_Snack_2",
-    "frame": { "x": 0, "y": 1761, "w": 17, "h": 15 },
+    "frame": { "x": 0, "y": 1786, "w": 17, "h": 15 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 88, "y": 182, "w": 17, "h": 15 },
@@ -262,7 +271,7 @@
    },
    {
     "filename": "Cold_Snack_3",
-    "frame": { "x": 0, "y": 1776, "w": 26, "h": 17 },
+    "frame": { "x": 0, "y": 1801, "w": 26, "h": 17 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 140, "y": 181, "w": 26, "h": 17 },
@@ -271,7 +280,7 @@
    },
    {
     "filename": "Hot_Case",
-    "frame": { "x": 0, "y": 1793, "w": 181, "h": 45 },
+    "frame": { "x": 0, "y": 1818, "w": 181, "h": 45 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 6, "y": 209, "w": 181, "h": 45 },
@@ -280,7 +289,7 @@
    },
    {
     "filename": "Hot_Snack_1",
-    "frame": { "x": 0, "y": 1838, "w": 25, "h": 15 },
+    "frame": { "x": 0, "y": 1863, "w": 25, "h": 15 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 28, "y": 232, "w": 25, "h": 15 },
@@ -289,7 +298,7 @@
    },
    {
     "filename": "Hot_Snack_2",
-    "frame": { "x": 0, "y": 1853, "w": 25, "h": 15 },
+    "frame": { "x": 0, "y": 1878, "w": 25, "h": 15 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 84, "y": 232, "w": 25, "h": 15 },
@@ -298,7 +307,7 @@
    },
    {
     "filename": "Hot_Snack_3",
-    "frame": { "x": 0, "y": 1868, "w": 25, "h": 15 },
+    "frame": { "x": 0, "y": 1893, "w": 25, "h": 15 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 140, "y": 232, "w": 25, "h": 15 },
@@ -307,7 +316,7 @@
    },
    {
     "filename": "Microwave",
-    "frame": { "x": 0, "y": 1883, "w": 102, "h": 42 },
+    "frame": { "x": 0, "y": 1908, "w": 102, "h": 42 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 192, "y": 172, "w": 102, "h": 42 },
@@ -316,7 +325,7 @@
    },
    {
     "filename": "Toaster_Oven",
-    "frame": { "x": 0, "y": 1925, "w": 102, "h": 36 },
+    "frame": { "x": 0, "y": 1950, "w": 102, "h": 36 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 192, "y": 218, "w": 102, "h": 36 },
@@ -325,7 +334,7 @@
    },
    {
     "filename": "Recipe_Panel",
-    "frame": { "x": 0, "y": 1961, "w": 176, "h": 88 },
+    "frame": { "x": 0, "y": 1986, "w": 176, "h": 88 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 302, "y": 169, "w": 176, "h": 88 },
@@ -334,7 +343,7 @@
    },
    {
     "filename": "Tab_Menu",
-    "frame": { "x": 0, "y": 2049, "w": 36, "h": 14 },
+    "frame": { "x": 0, "y": 2074, "w": 36, "h": 14 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 306, "y": 171, "w": 36, "h": 14 },
@@ -343,7 +352,7 @@
    },
    {
     "filename": "Tab_Recipe",
-    "frame": { "x": 0, "y": 2063, "w": 46, "h": 14 },
+    "frame": { "x": 0, "y": 2088, "w": 46, "h": 14 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 343, "y": 171, "w": 46, "h": 14 },
@@ -352,7 +361,7 @@
    },
    {
     "filename": "Recipe_Paper",
-    "frame": { "x": 0, "y": 2077, "w": 172, "h": 72 },
+    "frame": { "x": 0, "y": 2102, "w": 172, "h": 72 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 304, "y": 183, "w": 172, "h": 72 },
@@ -361,7 +370,7 @@
    },
    {
     "filename": "Status_Bar",
-    "frame": { "x": 0, "y": 2149, "w": 480, "h": 12 },
+    "frame": { "x": 0, "y": 2174, "w": 480, "h": 12 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 0, "y": 258, "w": 480, "h": 12 },
@@ -370,7 +379,7 @@
    },
    {
     "filename": "Served_Dot",
-    "frame": { "x": 0, "y": 2161, "w": 5, "h": 5 },
+    "frame": { "x": 0, "y": 2186, "w": 5, "h": 5 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 418, "y": 262, "w": 5, "h": 5 },
@@ -379,7 +388,7 @@
    },
    {
     "filename": "Text_Preview",
-    "frame": { "x": 0, "y": 2166, "w": 459, "h": 257 },
+    "frame": { "x": 0, "y": 2191, "w": 459, "h": 257 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 14, "y": 10, "w": 459, "h": 257 },
@@ -388,7 +397,7 @@
    },
    {
     "filename": "Ticket",
-    "frame": { "x": 0, "y": 2423, "w": 41, "h": 33 },
+    "frame": { "x": 0, "y": 2448, "w": 41, "h": 33 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 14, "y": 22, "w": 41, "h": 33 },
@@ -397,7 +406,7 @@
    },
    {
     "filename": "Title_Card",
-    "frame": { "x": 0, "y": 2456, "w": 240, "h": 190 },
+    "frame": { "x": 0, "y": 2481, "w": 240, "h": 190 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 120, "y": 34, "w": 240, "h": 190 },
@@ -406,7 +415,7 @@
    },
    {
     "filename": "Frame",
-    "frame": { "x": 0, "y": 2646, "w": 478, "h": 257 },
+    "frame": { "x": 0, "y": 2671, "w": 478, "h": 257 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 1, "y": 1, "w": 478, "h": 257 },
@@ -418,7 +427,7 @@
   "app": "https://www.aseprite.org/",
   "version": "1.3.18.6-arm64",
   "format": "RGBA8888",
-  "size": { "w": 480, "h": 2903 },
+  "size": { "w": 480, "h": 2928 },
   "scale": "1"
  }
 }

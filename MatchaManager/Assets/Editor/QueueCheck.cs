@@ -24,7 +24,8 @@ public static class QueueCheck
         snacks = customers.snacks;
         cup = customers.cup;
         Random.InitState(11);
-        customers.arrivalInterval = new Vector2(3, 3);
+        customers.balance = Object.Instantiate(customers.balance); // a copy, so the real asset is untouched
+        customers.balance.arrivalInterval = new Vector2(3, 3);
         customers.Init();
         browser.ShowRoot();
 
@@ -57,7 +58,7 @@ public static class QueueCheck
 
         // two identical orders: the one who ordered first gets the drink
         customers.autoArrive = false;
-        for (int t = 0; t < 12; t++) customers.Tick(10); // let everyone give up and leave
+        for (int t = 0; t < 100 && !customers.IsEmpty; t++) customers.Tick(5); // let everyone give up and leave
         Log("all gave up");
         var sunday = customers.recipes.First(r => r.displayName == "Sunday Matcha");
         var first = customers.Arrive(new Order(sunday));
@@ -84,7 +85,7 @@ public static class QueueCheck
     static void Log(string step)
     {
         var views = string.Join(",", customers.lineViews.Select(v => v.enabled ? "L" : "-"));
-        var pickup = string.Join(",", customers.pickup.Select(p => p.group.alpha > 0 ? p.ticketText.text.Split('\n')[0].Replace("<color=#8a2e2c>!</color> ", "!") : "-"));
+        var pickup = string.Join(",", customers.pickup.Select(p => p.group.alpha > 0 ? p.ticketText.text.Split('\n')[0] : "-"));
         Debug.Log($"[Check] {step,-12} line={customers.LineLength}[{views}] ordering={customers.SomeoneOrdering} " +
                   $"pickup=[{pickup}] selected=#{(customers.Selected != null ? customers.Selected.spot + 1 : 0)} " +
                   $"out={customers.Today.walkedOut} served={customers.Today.served} happy={customers.Today.happy}");

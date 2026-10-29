@@ -15,6 +15,9 @@ public class DayCycle : MonoBehaviour
     public CustomerManager customers;
     public Cup cup;
     public SnackStation snacks;
+    [Tooltip("Easy, Medium, Hard; the one in use is copied into Balance")]
+    public Balance[] difficulties;
+    public Balance balance;
     [Tooltip("Optional: if set, the day waits for CONTINUE / NEW GAME")]
     public TitleScreen title;
 
@@ -28,19 +31,6 @@ public class DayCycle : MonoBehaviour
     public TMP_Text summaryBody;
     public Button nextDayButton;
 
-    [Header("Hours")]
-    public int openHour = 9;
-    public int closeHour = 17;
-    [Tooltip("Real seconds from opening to closing")]
-    public float realSecondsPerDay = 300;
-
-    [Header("Difficulty")]
-    [Tooltip("Customers are this much less patient, and come this much more often, each day (0.05 = 5%)")]
-    public float patienceDropPerDay = 0.05f;
-    [Tooltip("Patience never drops below this fraction of day 1")]
-    public float minPatience = 0.6f;
-    [Tooltip("Happy customers to aim for each day (the dots in the status bar)")]
-    public int dailyGoal = 10;
 
     public int Day { get; private set; } = 1;
     public bool Ended { get; private set; }
@@ -49,7 +39,7 @@ public class DayCycle : MonoBehaviour
 
     float minutes; // game minutes since opening
     SaveData save = new SaveData();
-    float OpenMinutes => (closeHour - openHour) * 60f;
+    float OpenMinutes => (balance.closeHour - balance.openHour) * 60f;
 
     void Start()
     {
@@ -58,11 +48,35 @@ public class DayCycle : MonoBehaviour
         if (title == null) StartGame();
     }
 
+    public int Difficulty { get; private set; } = 1;
+
     // Loads the save (if any) and opens the shop.
     public void StartGame()
     {
         LoadSave();
         BeginDay();
+    }
+
+    // Day 1 at the chosen difficulty (0 easy, 1 medium, 2 hard); any old save is replaced.
+    public void StartNewGame(int difficulty)
+    {
+        SaveSystem.Delete();
+        LoadSave();
+        UseDifficulty(difficulty);
+        BeginDay();
+    }
+
+    void UseDifficulty(int difficulty)
+    {
+        if (difficulties == null || difficulties.Length == 0) return;
+        Difficulty = Mathf.Clamp(difficulty, 0, difficulties.Length - 1);
+        save.difficulty = Difficulty;
+        balance = customers.balance = difficulties[Difficulty];
+        if (snacks != null)
+        {
+            snacks.balance = balance;
+            snacks.ApplyBalance();
+        }
     }
 
     // Picks up the saved day and coins (or day 1 with nothing, on a first run).
@@ -71,6 +85,7 @@ public class DayCycle : MonoBehaviour
         save = SaveSystem.Load();
         Day = Mathf.Max(1, save.day);
         customers.SetCoins(save.coins);
+        UseDifficulty(save.difficulty);
     }
 
     void Update() => Tick(Time.deltaTime);
@@ -78,7 +93,7 @@ public class DayCycle : MonoBehaviour
     public void Tick(float dt)
     {
         if (!Running || Ended) return;
-        minutes = Mathf.Min(minutes + dt * OpenMinutes / realSecondsPerDay, OpenMinutes);
+        minutes = Mathf.Min(minutes + dt * OpenMinutes / balance.realSecondsPerDay, OpenMinutes);
         customers.open = IsOpen;
         RefreshClock();
         if (!IsOpen && customers.IsEmpty) EndDay();
@@ -97,9 +112,11 @@ public class DayCycle : MonoBehaviour
         Running = true;
         summary.SetActive(false);
         // later days: less patience and more customers
-        float hardness = Mathf.Max(minPatience, 1 - patienceDropPerDay * (Day - 1));
+        float hardness = balance.Hardness(Day);
         customers.patienceScale = hardness;
         customers.arrivalScale = hardness;
+        customers.dailyGoal = balance.Goal(Day);
+        customers.day = Day;
         customers.open = true;
         cup.Clear();
         if (snacks != null) snacks.ResetAll();
@@ -125,17 +142,18 @@ public class DayCycle : MonoBehaviour
         SaveSystem.Save(save);
 
         summaryTitle.text = $"DAY {Day} DONE";
-        string verdict = t.happy >= dailyGoal ? "<color=#2e5222>GOAL REACHED!</color>"
-            : t.happy >= dailyGoal / 2 ? "NOT BAD!" : "TOMORROW WILL BE BETTER";
+        int goal = balance.Goal(Day);
+        string verdict = t.happy >= goal ? "<color=#2e5222>GOAL REACHED!</color>"
+            : t.happy >= goal / 2 ? "NOT BAD!" : "TOMORROW WILL BE BETTER";
         summaryBody.text =
             $"SERVED<pos=70%>{t.served}\n" +
-            $"HAPPY<pos=70%>{t.happy} / {dailyGoal}\n" +
+            $"HAPPY<pos=70%>{t.happy} / {goal}\n" +
             $"WRONG ORDERS<pos=70%>{t.wrong}\n" +
             $"WALKED OUT<pos=70%>{t.walkedOut}\n" +
             $"EARNED<pos=70%><color=#2e5222>+{t.earned}</color>\n" +
             $"COINS<pos=70%>{customers.Coins}\n" +
             $"BEST DAY<pos=70%>{save.bestHappy} HAPPY{(newBest && Day > 1 ? " <color=#2e5222>NEW!</color>" : "")}\n" +
-            verdict;
+            verdict + $" <color=#8a7a5a>({balance.difficultyName})</color>";
         summary.SetActive(true);
         SoundFX.Play(Sfx.DayEnd);
         Debug.Log($"[Day] Day {Day} done: served {t.served}, happy {t.happy}, wrong {t.wrong}, walked out {t.walkedOut}, earned {t.earned}");
@@ -149,7 +167,7 @@ public class DayCycle : MonoBehaviour
             clockText.text = "<color=#d9705a>CLOSED</color>";
             return;
         }
-        int total = openHour * 60 + Mathf.FloorToInt(minutes / 10) * 10;
+        int total = balance.openHour * 60 + Mathf.FloorToInt(minutes / 10) * 10;
         int hour = total / 60 % 24, minute = total % 60;
         int h12 = hour % 12 == 0 ? 12 : hour % 12;
         clockText.text = $"{h12}:{minute:00} {(hour < 12 ? "AM" : "PM")}";

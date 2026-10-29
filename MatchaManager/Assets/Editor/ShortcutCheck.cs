@@ -41,6 +41,7 @@ public static class ShortcutCheck
 
         // ENTER on the title (no save yet, so it means NEW GAME)
         KeyboardShortcuts.Press(keys.continueButton.interactable ? keys.continueButton : keys.newGameButton);
+        KeyboardShortcuts.Press(keys.title.difficultyButtons[1]); // 2 = medium
         Debug.Log($"[Check] ENTER on title -> title showing={keys.title.Showing} running={day.Running}");
 
         var sunday = customers.recipes.First(r => r.displayName == "Sunday Matcha");

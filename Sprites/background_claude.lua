@@ -328,6 +328,19 @@ layer("Serve_Button", function()
   for k = 0, 1 do line(SERVE_X - 5, SERVE_Y + k, SERVE_X - 2, SERVE_Y + 3 + k, P.white); line(SERVE_X - 2, SERVE_Y + 3 + k, SERVE_X + 5, SERVE_Y - 4 + k, P.white) end
 end)
 
+-- round red DUMP button left of the cup, same style as Serve, with a white trash can
+layer("Dump_Button", function()
+  local x, y, r = 380, SERVE_Y, SERVE_R
+  disc(x, y + 2, r, P.redDk)
+  disc(x, y, r, P.ink)
+  disc(x, y, r - 1, P.redLt)
+  for dx = -6, 0 do px(x + dx - 1, y - 6 + math.floor(dx * dx / 12), P.blush) end
+  fill(x - 5, y - 5, 11, 2, P.white)              -- lid
+  fill(x - 2, y - 7, 5, 2, P.white)               -- handle
+  fill(x - 4, y - 2, 9, 8, P.white)               -- can
+  for k = -2, 2, 2 do fill(x + k, y - 1, 1, 6, P.redLt) end
+end)
+
 layer("Prep_Station_Background", function()
   fill(2, 169, 297, 88, P.counter)
   fill(2, 254, 297, 3, P.counterSh)

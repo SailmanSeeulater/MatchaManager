@@ -22,7 +22,13 @@ public static class TitleCheck
         title.Show();
         Log("first run");
         title.NewGame();
-        Log("new game");
+        Log("new game -> pick");
+        MatchaSceneBuilder.Capture(MatchaSceneBuilder.Arg("-captureOut")?.Replace(".png", "_difficulty.png") ?? "TitleDifficulty.png");
+        title.ShowMain(); // what BACK does
+        Log("back");
+        title.NewGame();
+        title.Choose(0);
+        Log("chose easy");
 
         SaveSystem.Save(new SaveData { day = 3, coins = 120, bestHappy = 7 });
         title.Show();
@@ -36,6 +42,8 @@ public static class TitleCheck
         Log("new game once");
         title.NewGame();
         Log("new game twice");
+        title.Choose(2);
+        Log("chose hard");
 
         SaveSystem.Delete();
         SaveSystem.PathOverride = null;
@@ -45,6 +53,6 @@ public static class TitleCheck
     {
         Debug.Log($"[Check] {step,-15} title={title.Showing} continue={(title.continueButton.interactable ? "on" : "off")} " +
                   $"info='{title.continueInfo.text}' newGame='{title.newGameLabel.text}' running={day.Running} " +
-                  $"{day.dayText.text} coins={day.customers.Coins} save={(SaveSystem.Exists ? SaveSystem.Load().day + "/" + SaveSystem.Load().coins : "none")}");
+                  $"{day.dayText.text} coins={day.customers.Coins} mode={(day.balance != null ? day.balance.difficultyName : "-")} picking={title.ChoosingDifficulty} save={(SaveSystem.Exists ? SaveSystem.Load().day + "/" + SaveSystem.Load().coins : "none")}");
     }
 }
