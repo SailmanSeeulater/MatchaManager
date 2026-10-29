@@ -1,9 +1,10 @@
 using UnityEngine;
 
 // Every number that makes the game easier or harder, in one asset.
-// Defaults were tuned with the simulator (Oct 2026): beginners do fine for the
-// first few days, regular players hit the goal all week but start losing
-// customers by day 10, experts start feeling it around day 10.
+// Defaults were tuned with the simulator (Oct 2026, bots using the keyboard shortcuts):
+// beginners do fine for the first week and crack around day 10, regular and expert
+// players hit the goal all week. The bots press keys faster than people do, so
+// play-test before tightening patience further.
 //
 // Assets/Data/Balance.asset (created by Matcha > Build Scene, never overwritten).
 // Edit it in the Inspector, even during Play mode, and check the effect with
@@ -30,14 +31,25 @@ public class Balance : ScriptableObject
     [Header("Customers")]
     [Tooltip("Seconds between new customers walking in (random in this range)")]
     public Vector2 arrivalInterval = new Vector2(14, 24);
-    [Tooltip("Multiplies every recipe's patience (Patience Seconds on each recipe)")]
-    public float patienceMultiplier = 1.3f;
-    [Tooltip("Extra seconds a customer waits when they ordered a hot snack")]
-    public float hotSnackExtraPatience = 10;
     [Tooltip("How fast patience drains in line compared to at pickup")]
     public float linePatienceRate = 0.4f;
     [Tooltip("Seconds the order shows at the counter before they move to pickup")]
     public float orderSeconds = 2;
+
+    [Header("Patience")]
+    [Tooltip("Seconds every customer waits at pickup no matter the order (reading it, the queue)...")]
+    public float patienceBase = 10;
+    [Tooltip("...plus this much per key press the order needs with the shortcuts (SHIFT+line, digits, Z, " +
+             "snack keys, SPACE), plus the heating time of a hot snack. Shrinks each day like the rest")]
+    public float secondsPerPress = 3.8f;
+    [Tooltip("Served while patience is above this (green bar): FAST bonus on top of the tip")]
+    [Range(0, 1)] public float fastZone = 0.65f;
+    [Tooltip("FAST bonus as a share of the price")]
+    public float fastBonus = 0.5f;
+    [Tooltip("Served with patience below this (red bar): late, no tip and only part of the price")]
+    [Range(0, 1)] public float lateZone = 0.3f;
+    [Tooltip("Share of the price a late order pays")]
+    [Range(0, 1)] public float latePay = 0.5f;
 
     [Header("Orders (how finicky)")]
     [Range(0, 1)] public float snackChance = 0.4f;

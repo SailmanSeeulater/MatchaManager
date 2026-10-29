@@ -25,7 +25,5 @@ public class DrinkRecipe : ScriptableObject
     public List<Line> lines = new List<Line>();
     [Tooltip("Coins for a correct drink; a happy customer tips up to the same again")]
     public int price = 5;
-    [Tooltip("Seconds before the customer gives up")]
-    public float patienceSeconds = 45;
     [HideInInspector] public int defaultsVersion; // lets Import Drink Tree update starter recipes it made
 }

@@ -5,9 +5,9 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // Headless check for keyboard shortcuts: lists every binding, then plays a whole
-// order (title -> drink -> heated danish -> serve) only through the buttons the
-// keys are bound to. Real key polling needs Play mode, so this presses each
-// key's bound button exactly the way KeyboardShortcuts does.
+// order (title -> drink -> heated danish -> serve) with the fewest keys: SHIFT+line
+// jumps (S1 = SHIFT+1), digits that pour and go back HOME, Z to pour again.
+// Real key polling needs Play mode, so this does what KeyboardShortcuts does for each key.
 // Run: Unity -batchmode -quit -projectPath . -executeMethod ShortcutCheck.Run -captureOut out.png -savePath save.json
 public static class ShortcutCheck
 {
@@ -46,12 +46,17 @@ public static class ShortcutCheck
 
         var sunday = customers.recipes.First(r => r.displayName == "Sunday Matcha");
         var danish = snacks.Menu.First(s => s.needsHeating);
-        customers.Arrive(new Order(sunday, danish));
+        var order = new Order(sunday, danish);
+        customers.Arrive(order);
         customers.Tick(1);
+        Debug.Log($"[Check] order needs {order.KeyPresses()} presses, waits {customers.PatienceSeconds(order):0}s; recipe: {panel.body.text.Replace("\n", " / ")}");
 
-        Type("2 1 1 2 ESC ESC ESC 4 2 ESC 1 4 1 ESC ESC 3 1 1");
+        Type("S1"); // ANY MATCHA opens the Matcha folder
+        Type("1");  // low-grade pours and goes back HOME
+        Type("S2"); // HOT WATER pours straight away
+        Type("S3 1 S4 1 1");
         Debug.Log($"[Check] cup: {customers.cup.readout.text}");
-        Type("A R");
+        Type("S5 R"); // the danish, into the microwave
         snacks.Tick(5);
         Debug.Log($"[Check] microwave after 5s: '{snacks.appliances[0].timerText.text}'");
         Type("R");
@@ -67,7 +72,7 @@ public static class ShortcutCheck
 
         Type("SPACE");
         Debug.Log($"[Check] SPACE with empty cup -> served today={customers.Today.served}");
-        Type("4 1 1");
+        Type("4 2 Z Z");
         Debug.Log($"[Check] before X: {customers.cup.readout.text}");
         Type("X");
         Debug.Log($"[Check] after X: empty={customers.cup.IsEmpty}");
@@ -90,6 +95,16 @@ public static class ShortcutCheck
                 KeyboardShortcuts.Press(panel.Current == RecipePanel.Tab.Menu ? panel.recipeTab : panel.menuTab);
                 continue;
             }
+            if (name.Length == 2 && name[0] == 'S' && char.IsDigit(name[1]))
+            {
+                keys.JumpToLine(name[1] - '1');
+                continue;
+            }
+            if (name == "Z")
+            {
+                browser.PourAgain();
+                continue;
+            }
             var key = name switch
             {
                 "ESC" => Key.Backspace,
@@ -98,7 +113,8 @@ public static class ShortcutCheck
                 _ => (Key)System.Enum.Parse(typeof(Key), name),
             };
             var binding = keys.game.First(b => b.key == key);
-            KeyboardShortcuts.Press(binding.button);
+            if (System.Array.IndexOf(browser.slots, binding.button) >= 0) browser.PressSlotKey(binding.button);
+            else KeyboardShortcuts.Press(binding.button);
         }
         Debug.Log($"[Check] keys '{sequence}' -> path='{browser.pathText.text}'");
     }

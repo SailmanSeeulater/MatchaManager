@@ -12,6 +12,7 @@ public class Order
         public int portions;
         public string label;
         public bool removed;     // "no milk": nothing from this line may be in the cup
+        public DrinkNode folder; // the recipe's folder when this was an "any" line (still set after WITH)
 
         public bool IsAny => !node.IsIngredient;
         public string Name => (IsAny ? "ANY " : "") + (string.IsNullOrEmpty(label) ? node.displayName : label).ToUpper();
@@ -52,7 +53,62 @@ public class Order
         lines = recipe.lines.Where(l => l.node != null).Select(l => new Line
         {
             node = l.node, portions = Mathf.Max(1, l.portions), label = l.label,
+            folder = l.node.IsIngredient ? null : l.node,
         }).ToList();
+    }
+
+    // The fewest key presses that make this order with the shortcuts: SHIFT+line opens an "any"
+    // line's folder (then digits down to the nearest choice), opens a WITH line's folder (then one
+    // digit), or pours a named ingredient; Z pours each further portion. A cold snack is one press,
+    // a hot one three (pick, appliance, take out); asking an unclear customer is two; SPACE serves.
+    public int KeyPresses()
+    {
+        if (presses < 0) presses = CountPresses(); // fixed once the order is complete
+        return presses;
+    }
+
+    int presses = -1;
+
+    int CountPresses()
+    {
+        int count = 1;
+        foreach (var line in lines)
+        {
+            if (line.removed) continue;
+            int first = line.IsAny ? 1 + line.node.Ingredients().Min(leaf => PressesTo(line.node, leaf))
+                : line.folder != null ? 1 + PressesTo(ParentOf(line.folder, line.node), line.node)
+                : 1;
+            count += first + line.portions - 1;
+        }
+        if (snack != null) count += snack.needsHeating ? 3 : 1;
+        if (unclear) count += 2;
+        return count;
+    }
+
+    const int Slots = 5; // drink panel buttons; bigger folders page with a MORE button
+
+    // Digits (and MORE presses) from inside a folder down to one of its ingredients.
+    public static int PressesTo(DrinkNode folder, DrinkNode leaf)
+    {
+        var kids = folder.children;
+        bool paged = kids.Count > Slots;
+        for (int i = 0; i < kids.Count; i++)
+        {
+            var kid = kids[i];
+            int here = (paged ? i / (Slots - 1) : 0) + 1;
+            if (kid == leaf) return here;
+            if (!kid.IsIngredient && kid.Ingredients().Contains(leaf)) return here + PressesTo(kid, leaf);
+        }
+        return 0;
+    }
+
+    // The folder (inside top) that holds node directly.
+    public static DrinkNode ParentOf(DrinkNode top, DrinkNode node)
+    {
+        if (top.children.Contains(node)) return top;
+        foreach (var kid in top.children)
+            if (!kid.IsIngredient && kid.Ingredients().Contains(node)) return ParentOf(kid, node);
+        return top;
     }
 
     // Coins for getting it right, before the tip.

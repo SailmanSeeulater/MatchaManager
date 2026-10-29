@@ -127,33 +127,33 @@ public static class DrinkTreeImporter
         (string, int, string, bool) One(string node, bool optional = false) => (node, 1, null, optional);
         MigrateRecipes();
 
-        Recipe("Sunday Matcha", 6, 45, matcha, One("Hot Water"), milk, sweetener);
-        Recipe("Hojicha Latte", 5, 45, One("Hojicha"), One("Hot Water"), anyMilk, sweetener);
-        Recipe("Iced Matcha", 5, 40, matcha, One("Cold Water"), One("Ice"), sweetener);
-        Recipe("Mocha", 6, 50, coffee, ("Chocolate", 1, "Chocolate", false), anyMilk);
-        Recipe("Matcha Latte", 5, 40, matcha, One("Hot Water"), anyMilk, sweetener);
-        Recipe("London Fog", 6, 45, One("Earl Gray"), One("Hot Water"), anyMilk, One("Vanilla Syrup", true));
-        Recipe("Jasmine Milk Tea", 5, 40, One("Jasmine"), One("Hot Water"), milk, sweetener);
-        Recipe("Iced Coffee", 5, 35, coffee, One("Ice"), One("Cold Water"), milk, sweetener);
-        Recipe("Hot Chocolate", 5, 40, ("Chocolate", 2, "Chocolate", false), anyMilk, sweetener);
+        Recipe("Sunday Matcha", 6, matcha, One("Hot Water"), milk, sweetener);
+        Recipe("Hojicha Latte", 5, One("Hojicha"), One("Hot Water"), anyMilk, sweetener);
+        Recipe("Iced Matcha", 5, matcha, One("Cold Water"), One("Ice"), sweetener);
+        Recipe("Mocha", 6, coffee, ("Chocolate", 1, "Chocolate", false), anyMilk);
+        Recipe("Matcha Latte", 5, matcha, One("Hot Water"), anyMilk, sweetener);
+        Recipe("London Fog", 6, One("Earl Gray"), One("Hot Water"), anyMilk, One("Vanilla Syrup", true));
+        Recipe("Jasmine Milk Tea", 5, One("Jasmine"), One("Hot Water"), milk, sweetener);
+        Recipe("Iced Coffee", 5, coffee, One("Ice"), One("Cold Water"), milk, sweetener);
+        Recipe("Hot Chocolate", 5, ("Chocolate", 2, "Chocolate", false), anyMilk, sweetener);
 
         // coffee bar
-        Recipe("Cold Brew", 5, 35, One("Cold Brew"), One("Cold Water"), One("Ice"), sweetener);
-        Recipe("Coconut Cold Brew", 6, 40, One("Cold Brew"), One("Ice"), milk, One("Coconut Flakes"));
-        Recipe("Caramel Macchiato", 7, 45, coffee, One("Vanilla Syrup"), anyMilk, One("Caramel Drizzle"));
-        Recipe("Honeycomb Latte", 7, 45, coffee, anyMilk, One("Brown Sugar"), One("Caramel Honeycomb"));
-        Recipe("Biscoff Latte", 7, 45, coffee, anyMilk, sweetener, One("Biscoff Crumbles"));
-        Recipe("White Mocha", 6, 45, coffee, One("White Chocolate"), anyMilk);
-        Recipe("Skinny Latte", 5, 40, One("Decaf"), One("Almond Milk"), One("Stevia"));
-        Recipe("Breve", 5, 35, coffee, One("Half and Half"), One("Cane Sugar", true));
-        Recipe("Vienna Coffee", 6, 40, coffee, One("Hot Water"), One("Heavy Cream"), One("White Sugar", true));
+        Recipe("Cold Brew", 5, One("Cold Brew"), One("Cold Water"), One("Ice"), sweetener);
+        Recipe("Coconut Cold Brew", 6, One("Cold Brew"), One("Ice"), milk, One("Coconut Flakes"));
+        Recipe("Caramel Macchiato", 7, coffee, One("Vanilla Syrup"), anyMilk, One("Caramel Drizzle"));
+        Recipe("Honeycomb Latte", 7, coffee, anyMilk, One("Brown Sugar"), One("Caramel Honeycomb"));
+        Recipe("Biscoff Latte", 7, coffee, anyMilk, sweetener, One("Biscoff Crumbles"));
+        Recipe("White Mocha", 6, coffee, One("White Chocolate"), anyMilk);
+        Recipe("Skinny Latte", 5, One("Decaf"), One("Almond Milk"), One("Stevia"));
+        Recipe("Breve", 5, coffee, One("Half and Half"), One("Cane Sugar", true));
+        Recipe("Vienna Coffee", 6, coffee, One("Hot Water"), One("Heavy Cream"), One("White Sugar", true));
         // tea bar
-        Recipe("Matcha Fizz", 6, 40, matcha, One("Sparkling Water"), One("Ice"), ("Syrup", 1, "Syrup", true));
-        Recipe("Pistachio Matcha", 6, 40, matcha, One("Hot Water"), One("Pistachio Milk"), sweetener);
-        Recipe("Matcha Cloud", 7, 45, anyMilk, One("Ice"), One("Maple Syrup"), One("Matcha Foam"));
-        Recipe("Cheese Foam Tea", 7, 45, One("Jasmine"), One("Cold Water"), One("Ice"), One("Cheese Foam"));
-        Recipe("Sesame Hojicha", 7, 45, One("Hojicha"), One("Hot Water"), anyMilk, One("Sesame Foam"));
-        Recipe("Ube Latte", 6, 40, One("Ube Syrup"), One("Oat Milk"), One("Ice"));
+        Recipe("Matcha Fizz", 6, matcha, One("Sparkling Water"), One("Ice"), ("Syrup", 1, "Syrup", true));
+        Recipe("Pistachio Matcha", 6, matcha, One("Hot Water"), One("Pistachio Milk"), sweetener);
+        Recipe("Matcha Cloud", 7, anyMilk, One("Ice"), One("Maple Syrup"), One("Matcha Foam"));
+        Recipe("Cheese Foam Tea", 7, One("Jasmine"), One("Cold Water"), One("Ice"), One("Cheese Foam"));
+        Recipe("Sesame Hojicha", 7, One("Hojicha"), One("Hot Water"), anyMilk, One("Sesame Foam"));
+        Recipe("Ube Latte", 6, One("Ube Syrup"), One("Oat Milk"), One("Ice"));
     }
 
     // Updates the starter recipes made by older versions, once each. Build Scene calls it too.
@@ -220,14 +220,13 @@ public static class DrinkTreeImporter
         AssetDatabase.SaveAssets();
     }
 
-    static void Recipe(string name, int price, float patience, params (string node, int portions, string label, bool optional)[] lines)
+    static void Recipe(string name, int price, params (string node, int portions, string label, bool optional)[] lines)
     {
         var path = $"{RecipeDir}/{name}.asset";
         if (AssetDatabase.LoadAssetAtPath<DrinkRecipe>(path) != null) return;
         var recipe = ScriptableObject.CreateInstance<DrinkRecipe>();
         recipe.displayName = name;
         recipe.price = price;
-        recipe.patienceSeconds = patience;
         recipe.defaultsVersion = DefaultsVersion;
         foreach (var l in lines)
         {

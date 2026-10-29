@@ -5,7 +5,10 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // Keys that press on-screen buttons, laid out like the screen itself:
-//   1-5        drink slots (top to bottom)      ESC / BACKSPACE / P  back up a folder
+//   1-5        drink slots (top to bottom); pouring with a number goes back HOME
+//   ESC / BACKSPACE / P  back up a folder       Z                pour the last ingredient again
+//   SHIFT+1-9  jump to that line of the recipe checklist: opens an ANY line's folder (or a
+//              WITH line's), pours a named ingredient, or picks the order's snack
 //   SPACE      serve                            X                pour the cup out
 //   Q W E      cold snacks    R  microwave      T                toss the tray's snack
 //   A S D      hot snacks     F  toaster oven   TAB              switch MENU / RECIPE
@@ -32,6 +35,10 @@ public class KeyboardShortcuts : MonoBehaviour
     public Binding[] game;
     public RecipePanel recipePanel;
     public CustomerManager customers;
+    public DrinkBrowser browser;
+
+    static readonly Key[] Digits = { Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5, Key.Digit6, Key.Digit7, Key.Digit8, Key.Digit9 };
+    static readonly Key[] Numpad = { Key.Numpad1, Key.Numpad2, Key.Numpad3, Key.Numpad4, Key.Numpad5, Key.Numpad6, Key.Numpad7, Key.Numpad8, Key.Numpad9 };
 
     [Header("Overlays")]
     public TitleScreen title;
@@ -84,8 +91,19 @@ public class KeyboardShortcuts : MonoBehaviour
         }
         if (customers != null && kb.gKey.wasPressedThisFrame) customers.OpenGuess();
 
+        bool shift = kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed;
+        if (shift)
+            for (int i = 0; i < Digits.Length; i++)
+                if (Pressed(kb, Digits[i], Numpad[i])) JumpToLine(i);
         foreach (var b in game)
-            if (Pressed(kb, b.key, b.altKey) || (b.altKey2 != Key.None && kb[b.altKey2].wasPressedThisFrame)) Press(b.button);
+        {
+            if (!Pressed(kb, b.key, b.altKey) && !(b.altKey2 != Key.None && kb[b.altKey2].wasPressedThisFrame)) continue;
+            bool slot = browser != null && Array.IndexOf(browser.slots, b.button) >= 0;
+            if (slot && shift) continue; // SHIFT+digit is a line jump
+            if (slot) browser.PressSlotKey(b.button);
+            else Press(b.button);
+        }
+        if (browser != null && kb.zKey.wasPressedThisFrame) browser.PourAgain();
         if (customers != null)
         {
             if (kb.leftArrowKey.wasPressedThisFrame) customers.SelectNext(-1);
@@ -93,6 +111,21 @@ public class KeyboardShortcuts : MonoBehaviour
         }
         if (kb.tabKey.wasPressedThisFrame && recipePanel != null)
             Press(recipePanel.Current == RecipePanel.Tab.Menu ? recipePanel.recipeTab : recipePanel.menuTab);
+    }
+
+    // Line i of the selected customer's checklist (the numbers on the recipe panel): drink lines
+    // first, then the snack. Unclear orders have no lines to jump to until they're cleared up.
+    public void JumpToLine(int i)
+    {
+        var order = customers != null ? customers.CurrentOrder : null;
+        if (order == null || order.unclear || browser == null) return;
+        if (i < order.lines.Count) browser.JumpTo(order.lines[i]);
+        else if (i == order.lines.Count && order.snack != null && customers.snacks != null)
+        {
+            var snacks = customers.snacks;
+            int slot = Array.FindIndex(snacks.slots, s => s.snack == order.snack);
+            if (slot >= 0) snacks.ClickSlot(slot);
+        }
     }
 
     // A clicked button stays "selected", and the UI would then also press it on SPACE/ENTER.

@@ -7,6 +7,8 @@ using UnityEngine.UI;
 // Browses the drink tree like a file system: the 5 slots show the current
 // folder's children. Clicking a folder opens it, clicking an ingredient adds
 // one portion to the cup, Back goes up a level.
+// Keyboard extras (KeyboardShortcuts): a digit that pours goes back HOME, ready for the
+// next line; Z pours the last ingredient again; SHIFT+line jumps to a recipe line.
 public class DrinkBrowser : MonoBehaviour
 {
     public DrinkNode root;
@@ -20,6 +22,8 @@ public class DrinkBrowser : MonoBehaviour
 
     readonly List<DrinkNode> path = new List<DrinkNode>(); // root ... current folder
     int page;
+    DrinkNode lastPoured;
+    bool fromKeyboard;
 
     public DrinkNode Current => path[path.Count - 1];
 
@@ -31,7 +35,8 @@ public class DrinkBrowser : MonoBehaviour
             slots[i].onClick.AddListener(() => ClickSlot(index));
         }
         backButton.onClick.AddListener(Back);
-        cup.Served += _ => ShowRoot();
+        cup.Served += _ => { lastPoured = null; ShowRoot(); };
+        cup.Dumped += () => lastPoured = null;
         ShowRoot();
     }
 
@@ -58,13 +63,72 @@ public class DrinkBrowser : MonoBehaviour
         var node = entries[index];
         if (node.IsIngredient)
         {
-            cup.Add(node);
+            if (Pour(node) && fromKeyboard) ShowRoot();
             return;
         }
         path.Add(node);
         SoundFX.Play(Sfx.Click);
         page = 0;
         Refresh();
+    }
+
+    bool Pour(DrinkNode node)
+    {
+        if (!cup.Add(node)) return false;
+        lastPoured = node;
+        return true;
+    }
+
+    // A slot pressed with its number key: like a click, but pouring goes back HOME.
+    public void PressSlotKey(Button slot)
+    {
+        fromKeyboard = true;
+        try { KeyboardShortcuts.Press(slot); }
+        finally { fromKeyboard = false; }
+    }
+
+    // Z: one more portion of whatever was poured last (EXTRA without walking back to it).
+    public void PourAgain()
+    {
+        if (lastPoured != null) Pour(lastPoured);
+    }
+
+    // SHIFT+line: an "any" line opens its folder so the player still picks which one, a WITH
+    // line opens the folder its ingredient is in (picking it is the point), a named ingredient pours.
+    public void JumpTo(Order.Line line)
+    {
+        if (line == null || line.removed) return;
+        if (line.IsAny) OpenFolder(line.node);
+        else if (line.folder != null) OpenFolder(Order.ParentOf(line.folder, line.node));
+        else
+        {
+            Pour(line.node);
+            ShowRoot();
+        }
+    }
+
+    public void OpenFolder(DrinkNode folder)
+    {
+        var route = Route(root, folder);
+        if (route == null) return;
+        path.Clear();
+        path.AddRange(route);
+        page = 0;
+        SoundFX.Play(Sfx.Click);
+        Refresh();
+    }
+
+    // root ... target, or null when target isn't in the tree
+    static List<DrinkNode> Route(DrinkNode from, DrinkNode target)
+    {
+        if (from == target) return new List<DrinkNode> { from };
+        foreach (var kid in from.children)
+        {
+            if (kid.IsIngredient) continue;
+            var rest = Route(kid, target);
+            if (rest != null) { rest.Insert(0, from); return rest; }
+        }
+        return null;
     }
 
     public void Back()
@@ -124,7 +188,7 @@ public class DrinkBrowser : MonoBehaviour
         slotIcons[slot].enabled = icon != null;
     }
 
-    // "HOME > FLAVORS > TEA"; when that's too long for the bar, the start is
+    // "HOME > DRINK TYPE > TEA"; when that's too long for the bar, the start is
     // dropped instead of the end so you always see where you are: "... > TEA > MATCHA".
     string PathLabel()
     {

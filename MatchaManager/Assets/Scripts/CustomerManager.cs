@@ -122,6 +122,7 @@ public class CustomerManager : MonoBehaviour
     static readonly Color Impatient = new Color(1f, 0.6f, 0.55f);
     static readonly Color TicketSelected = new Color(1f, 0.92f, 0.55f);
     static readonly Color PatienceOk = new Color32(0x6f, 0xa0, 0x4a, 0xff);
+    static readonly Color PatienceMid = new Color32(0xe0, 0xb0, 0x50, 0xff);
     static readonly Color PatienceLow = new Color32(0xd9, 0x70, 0x5a, 0xff);
 
     // Nobody in line, at the counter, or at pickup.
@@ -278,8 +279,9 @@ public class CustomerManager : MonoBehaviour
 
     // How long this order's customer waits at pickup before giving up (hot snacks take a while).
     public float PatienceSeconds(Order order) =>
-        (order.recipe.patienceSeconds * balance.patienceMultiplier +
-         (order.snack != null && order.snack.needsHeating ? balance.hotSnackExtraPatience : 0)) * patienceScale;
+        (balance.patienceBase + order.KeyPresses() * balance.secondsPerPress +
+         (order.snack != null && order.snack.needsHeating && snacks != null ? snacks.appliances.Min(a => a.readySeconds) : 0))
+        * patienceScale;
 
     // ---- counter -----------------------------------------------------------
 
@@ -444,16 +446,19 @@ public class CustomerManager : MonoBehaviour
             SoundFX.Play(Sfx.ServeBad);
             return true;
         }
-        // the tip depends on patience only: nobody can taste which grade went in
-        int paid = p.order.Price + Mathf.RoundToInt(p.order.Price * p.patience * balance.tipMultiplier);
+        // pay depends on the patience bar: green = FAST bonus, red = late (part of the price, no tip).
+        // Nobody can taste which grade went in.
+        int price = p.order.Price;
+        bool fast = p.patience >= balance.fastZone, late = p.patience <= balance.lateZone;
+        int paid = late ? Mathf.RoundToInt(price * balance.latePay)
+            : price + Mathf.RoundToInt(price * p.patience * balance.tipMultiplier) + (fast ? Mathf.RoundToInt(price * balance.fastBonus) : 0);
         // made an unclear order right without asking
         bool guessed = p.order.unclear;
         if (guessed) paid += Mathf.RoundToInt(p.order.Price * balance.guessBonus);
         Coins += paid;
         Today.happy++;
         Today.earned += paid;
-        string cheer = guessed ? "GOOD GUESS!"
-            : p.patience > 0.6f ? "PERFECT!" : "FINALLY...";
+        string cheer = guessed ? "GOOD GUESS!" : fast ? "SO FAST!" : late ? "FINALLY..." : "THANKS!";
         React(p, $"{cheer}\n<color=#2e5222>+{paid}</color>", "1e1a2b");
         SoundFX.Play(Sfx.ServeGood);
         return true;
@@ -590,8 +595,10 @@ public class CustomerManager : MonoBehaviour
         var s = pickup[spot];
         float amount = Mathf.Clamp01(p.patience);
         s.patienceFill.sizeDelta = new Vector2(Mathf.Round(s.patienceWidth * amount), s.patienceFill.sizeDelta.y);
-        s.patienceFill.GetComponent<Image>().color = amount < 0.35f ? PatienceLow : PatienceOk;
-        s.view.color = amount < 0.35f && p.stage == Stage.Waiting ? Color.Lerp(Color.white, Impatient, 0.5f) : Color.white;
+        // green while serving pays the FAST bonus, red once it'd be late
+        s.patienceFill.GetComponent<Image>().color = amount >= balance.fastZone ? PatienceOk
+            : amount <= balance.lateZone ? PatienceLow : PatienceMid;
+        s.view.color = amount <= balance.lateZone && p.stage == Stage.Waiting ? Color.Lerp(Color.white, Impatient, 0.5f) : Color.white;
     }
 
     void RefreshLine()
@@ -647,11 +654,12 @@ public class CustomerManager : MonoBehaviour
         for (int i = 0; i < order.lines.Count; i++)
         {
             var line = order.lines[i];
-            if (line.removed) { rows.Add($"[-] <s>{line.Name}</s> NONE"); continue; }
+            string key = $"<color=#8a7a5a>{i + 1}</color>"; // SHIFT+number jumps to this line
+            if (line.removed) { rows.Add($"{key}[-] <s>{line.Name}</s> NONE"); continue; }
             string count = result.have[i] > 0 && !result.lineOk[i] ? $" ({result.have[i]}/{line.portions})" : "";
-            rows.Add($"[{(result.lineOk[i] ? "x" : " ")}] {line.Name} {line.Amount}{count}");
+            rows.Add($"{key}[{(result.lineOk[i] ? "x" : " ")}] {line.Name} {line.Amount}{count}");
         }
-        if (order.snack != null) rows.Add(SnackRow(order));
+        if (order.snack != null) rows.Add($"<color=#8a7a5a>{order.lines.Count + 1}</color>" + SnackRow(order));
         if (result.extras.Count > 0)
             rows.Add("<color=#8a2e2c>[!] NOT ORDERED: " +
                      string.Join(", ", result.extras.Select(n => n.displayName.ToUpper())) + "</color>");

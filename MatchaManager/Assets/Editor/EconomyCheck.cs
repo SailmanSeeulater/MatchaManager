@@ -74,6 +74,28 @@ public static class EconomyCheck
             for (int t = 0; t < 10 && !customers.IsEmpty; t++) customers.Tick(5);
         }
 
+        // the patience bar decides the pay: green = FAST bonus, yellow = tip, red = late
+        foreach (float patience in new[] { 0.9f, 0.5f, 0.2f })
+        {
+            var p = customers.Arrive(new Order(sunday));
+            customers.Tick(1);
+            p.patience = patience;
+            Add(cheap);
+            int before = customers.Coins + customers.Today.spent;
+            cup.Serve();
+            Debug.Log($"[Check] served at patience {patience:0.0}: paid {customers.Coins + customers.Today.spent - before} '{customers.LastReaction?.Replace("\n", " ")}'");
+            for (int t = 0; t < 10 && !customers.IsEmpty; t++) customers.Tick(5);
+        }
+
+        // how long each drink's bar lasts on day 1 (no snack, no changes)
+        var levels = MatchaSceneBuilder.EnsureDifficulties();
+        foreach (var r in customers.recipes)
+        {
+            var o = new Order(r);
+            Debug.Log($"[Check] {r.displayName,-18} {o.KeyPresses(),2} presses: " +
+                      string.Join("  ", levels.Select(b => $"{b.difficultyName} {b.patienceBase + o.KeyPresses() * b.secondsPerPress:0}s")));
+        }
+
         // WITH asks for a particular choice, never the cheapest: habit pours the wrong one
         var hard = AssetDatabase.LoadAssetAtPath<Balance>("Assets/Data/Balance Hard.asset");
         var addable = browser.root.Ingredients().Where(n => n.cupPixels <= hard.addMaxPixels).ToList();

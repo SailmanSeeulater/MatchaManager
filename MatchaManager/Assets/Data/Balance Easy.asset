@@ -21,10 +21,14 @@ MonoBehaviour:
   goalPerDay: 1
   maxGoal: 16
   arrivalInterval: {x: 18, y: 28}
-  patienceMultiplier: 1.7
-  hotSnackExtraPatience: 15
   linePatienceRate: 0.3
   orderSeconds: 2
+  patienceBase: 14
+  secondsPerPress: 5.5
+  fastZone: 0.55
+  fastBonus: 0.5
+  lateZone: 0.2
+  latePay: 0.75
   snackChance: 0.3
   changeChance: 0.3
   changeChancePerDay: 0.02
@@ -38,15 +42,9 @@ MonoBehaviour:
   maxUnclearChance: 0
   wrongGuessPenalty: 0.1
   guessBonus: 0.5
-  presetVersion: 2
+  presetVersion: 3
   startingCoins: 30
   costMultiplier: 0.7
-  casualChance: 0.5
-  connoisseurChance: 0.1
-  connoisseurPerDay: 0.01
-  maxConnoisseur: 0.2
-  palateTip: {x: 0.5, y: 1, z: 1.5}
-  cheapTipPenalty: 0.5
   dumpPenalty: 0.1
   tipMultiplier: 1.2
   harderPerDay: 0.05

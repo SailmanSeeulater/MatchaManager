@@ -463,6 +463,7 @@ public static class MatchaSceneBuilder
         Hint(drink, serveRect.x + serveRect.w / 2f - 10, 119, "SPACE", dimInk); // just above the SERVE label
         Bind(Key.X, Key.None, dump);
         Hint(drink, dumpRect.x + dumpRect.w / 2f - 1, 119, "X", dimInk); // above the DUMP label
+        Hint(drink, 366, 96, "Z=AGAIN", dimInk); // left of the glass: pour the last ingredient again
 
         Key[] snackKeys = { Key.Q, Key.W, Key.E, Key.A, Key.S, Key.D };
         for (int i = 0; i < snackSlots.Count; i++)
@@ -480,6 +481,7 @@ public static class MatchaSceneBuilder
         var trayRect = rects["Tray"];
         Hint(shop, trayRect.x - 6, trayRect.y - 3, "T", dimCream);
         Hint(recipe, 393, 174, "TAB", dimCream);
+        Hint(recipe, 411, 174, "SHIFT+1-9", dimCream); // jump to a checklist line (the grey numbers)
         HintRight(continueRt, 137, 2, "ENTER", dimCream);
         HintRight((RectTransform)newGameButton.transform, 137, 2, "N", dimInk);
         HintRight((RectTransform)nextDayButton.transform, 97, 2, "ENTER", dimCream);
@@ -487,6 +489,7 @@ public static class MatchaSceneBuilder
         keys.game = bindings.ToArray();
         keys.recipePanel = panel;
         keys.customers = customers;
+        keys.browser = browser;
         keys.title = title;
         keys.continueButton = continueButton;
         keys.newGameButton = newGameButton;
@@ -740,7 +743,7 @@ public static class MatchaSceneBuilder
             b =>
             {
                 b.difficultyName = "EASY"; b.description = "PATIENT, SIMPLE ORDERS";
-                b.arrivalInterval = new Vector2(18, 28); b.patienceMultiplier = 1.7f; b.hotSnackExtraPatience = 15; b.linePatienceRate = 0.3f;
+                b.arrivalInterval = new Vector2(18, 28); b.linePatienceRate = 0.3f;
                 b.snackChance = 0.3f; b.changeChance = 0.3f; b.changeChancePerDay = 0.02f; b.maxChangeChance = 0.5f; b.maxChanges = 1;
                 b.addChance = 0; b.doubleExtraChance = 0; b.tipMultiplier = 1.2f;
                 b.harderPerDay = 0.05f; b.hardestAt = 0.6f; b.dailyGoal = 6; b.goalPerDay = 1; b.maxGoal = 16;
@@ -750,7 +753,7 @@ public static class MatchaSceneBuilder
             b =>
             {
                 b.difficultyName = "HARD"; b.description = "PICKY AND IN A HURRY";
-                b.arrivalInterval = new Vector2(11, 19); b.patienceMultiplier = 1.0f; b.hotSnackExtraPatience = 8; b.linePatienceRate = 0.5f;
+                b.arrivalInterval = new Vector2(11, 19); b.linePatienceRate = 0.5f;
                 b.snackChance = 0.5f; b.changeChance = 0.7f; b.changeChancePerDay = 0.05f; b.maxChangeChance = 0.95f; b.maxChanges = 4;
                 b.addChance = 0.35f; b.doubleExtraChance = 0.3f; b.tipMultiplier = 0.8f;
                 b.harderPerDay = 0.06f; b.hardestAt = 0.45f; b.dailyGoal = 10; b.goalPerDay = 2; b.maxGoal = 30;
@@ -770,6 +773,13 @@ public static class MatchaSceneBuilder
             b => { b.startingCoins = 30; b.costMultiplier = 0.7f; },
             b => { },
             b => { b.startingCoins = 15; b.costMultiplier = 1.2f; },
+        };
+        // patience from key presses, fast bonus, late pay cut: roomier on easy, tighter on hard
+        var presetsV3 = new System.Action<Balance>[]
+        {
+            b => { b.patienceBase = 14; b.secondsPerPress = 5.5f; b.fastZone = 0.55f; b.fastBonus = 0.5f; b.lateZone = 0.2f; b.latePay = 0.75f; },
+            b => { },
+            b => { b.patienceBase = 8; b.secondsPerPress = 2.8f; b.fastZone = 0.75f; b.fastBonus = 0.6f; b.lateZone = 0.35f; b.latePay = 0.4f; },
         };
         var result = new Balance[DifficultyPaths.Length];
         for (int i = 0; i < DifficultyPaths.Length; i++)
@@ -792,6 +802,12 @@ public static class MatchaSceneBuilder
             {
                 presetsV2[i](result[i]);
                 result[i].presetVersion = 2;
+                EditorUtility.SetDirty(result[i]);
+            }
+            if (result[i].presetVersion < 3)
+            {
+                presetsV3[i](result[i]);
+                result[i].presetVersion = 3;
                 EditorUtility.SetDirty(result[i]);
             }
         }

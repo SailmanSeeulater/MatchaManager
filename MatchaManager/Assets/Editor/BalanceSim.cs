@@ -59,7 +59,7 @@ public static class BalanceSim
         for (int difficulty = 0; difficulty < difficulties.Length; difficulty++)
         {
             var balance = difficulties[difficulty];
-            report.AppendLine($"{balance.difficultyName}: arrivals {balance.arrivalInterval.x:0}-{balance.arrivalInterval.y:0}s, patience x{balance.patienceMultiplier:0.##}, " +
+            report.AppendLine($"{balance.difficultyName}: arrivals {balance.arrivalInterval.x:0}-{balance.arrivalInterval.y:0}s, patience {balance.patienceBase:0}s + {balance.secondsPerPress:0.#}s/press, fast/late {balance.fastZone:0.##}/{balance.lateZone:0.##}, " +
                               $"goal {balance.dailyGoal}+{balance.goalPerDay}/day, {balance.harderPerDay:P0} harder/day to {balance.hardestAt:P0}, " +
                               $"changes per order: day 1 {AverageChanges(balance, 1):0.0}, day 10 {AverageChanges(balance, 10):0.0}");
             report.AppendLine($"  {"",-9} {"day 1",-14} {"day 4",-14} {"day 7",-14} {"day 10",-14}  (goal {balance.Goal(1)}/{balance.Goal(4)}/{balance.Goal(7)}/{balance.Goal(10)})");
@@ -114,13 +114,9 @@ public static class BalanceSim
         browser.ShowRoot();
         day.StartNewGame(difficulty);
 
-        var depth = new Dictionary<DrinkNode, int>();
-        void Walk(DrinkNode n, int d) { depth[n] = d; foreach (var c in n.children) Walk(c, d + 1); }
-        Walk(browser.root, 0);
-
         for (int d = 0; d < Days; d++)
         {
-            var bot = new Bot(profile, customers, snacks, depth) { shopping = shopping };
+            var bot = new Bot(profile, customers, snacks) { shopping = shopping };
             float t = 0;
             while (!day.Ended && t < 1200)
             {
@@ -144,14 +140,13 @@ public static class BalanceSim
         readonly CustomerManager customers;
         readonly SnackStation snacks;
         readonly Cup cup;
-        readonly Dictionary<DrinkNode, int> depth;
         CustomerManager.Patron target;
         float doneAt;
         int heating = -1; // appliance in use for the target's snack
 
-        public Bot(Profile profile, CustomerManager customers, SnackStation snacks, Dictionary<DrinkNode, int> depth)
+        public Bot(Profile profile, CustomerManager customers, SnackStation snacks)
         {
-            this.profile = profile; this.customers = customers; this.snacks = snacks; this.depth = depth;
+            this.profile = profile; this.customers = customers; this.snacks = snacks;
             cup = customers.cup;
         }
 
@@ -217,9 +212,10 @@ public static class BalanceSim
             doneAt = t + time;
         }
 
-        // folders in, one click per portion, back out; then serve
-        float Clicks(Order order) => 1 + order.lines.Where(l => !l.removed)
-            .Sum(l => 2 * depth[l.node.Ingredients().First()] - 2 + l.portions);
+        // the bots play with the shortcuts: SHIFT+line, digits, Z, SPACE (Order.KeyPresses counts the
+        // snack and asking too, which Start and the guessing time already cover)
+        float Clicks(Order order) => order.KeyPresses() - (order.snack == null ? 0 : order.snack.needsHeating ? 3 : 1)
+                                     - (order.clue != null ? 2 : 0);
 
         float Estimate(Order order) =>
             profile.think + Clicks(order) * profile.click +

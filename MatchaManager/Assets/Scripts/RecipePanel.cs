@@ -173,13 +173,13 @@ public class RecipePanel : MonoBehaviour
         }
     }
 
-    static string DescribeDrink(DrinkRecipe drink)
+    string DescribeDrink(DrinkRecipe drink)
     {
         var used = drink.lines.Where(l => l.node != null).ToList();
         var lines = new Order(drink).lines;
         var rows = lines.Select((line, i) =>
             $"- {line.Name} {line.Amount}" + (used[i].optional ? " <color=#8a7a5a>(OPTIONAL)</color>" : "")).ToList();
-        rows.Add($"<color=#2e5222>PRICE {drink.price}</color>  WAITS {drink.patienceSeconds:0}S");
+        rows.Add($"<color=#2e5222>PRICE {drink.price}</color>  WAITS {customers.PatienceSeconds(new Order(drink)):0}S");
         return string.Join("\n", rows);
     }
 
