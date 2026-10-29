@@ -27,5 +27,5 @@ MonoBehaviour:
     label: 
     optional: 1
   price: 5
-  patienceSeconds: 35
-  defaultsVersion: 3
+  sprite: {fileID: 21300000, guid: 469b675d49b3d4bbb93b918f3c46b5bf, type: 3}
+  defaultsVersion: 4

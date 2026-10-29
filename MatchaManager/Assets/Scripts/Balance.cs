@@ -38,10 +38,10 @@ public class Balance : ScriptableObject
 
     [Header("Patience")]
     [Tooltip("Seconds every customer waits at pickup no matter the order (reading it, the queue)...")]
-    public float patienceBase = 10;
+    public float patienceBase = 13;
     [Tooltip("...plus this much per key press the order needs with the shortcuts (SHIFT+line, digits, Z, " +
              "snack keys, SPACE), plus the heating time of a hot snack. Shrinks each day like the rest")]
-    public float secondsPerPress = 3.8f;
+    public float secondsPerPress = 5.8f;
     [Tooltip("Served while patience is above this (green bar): FAST bonus on top of the tip")]
     [Range(0, 1)] public float fastZone = 0.65f;
     [Tooltip("FAST bonus as a share of the price")]

@@ -601,3 +601,170 @@ if fontdir then
   f:write('{"height":5,"glyphs":[' .. table.concat(entries, ",") .. ']}\n')
   f:close()
 end
+
+-- Finished drinks for Unity, exported with --script-param drinkdir=...: one 40x48 picture per
+-- recipe (named after it), shown in place of the glass once the cup matches someone's order.
+-- Each is a vessel (glass / mug / cup / bowl) with its liquid and toppings.
+local DRINKS = {
+  {"Sunday Matcha",     {vessel = "bowl", liquid = "6fa04a", foam = "a6cf7a", steam = true}},
+  {"Hojicha Latte",     {vessel = "mug", liquid = "a8693f", foam = "e8d9b5", accent = "8a5432", steam = true}},
+  {"Iced Matcha",       {vessel = "glass", layers = {{"6fa04a", 1}}, ice = true, straw = "b8423f"}},
+  {"Mocha",             {vessel = "mug", liquid = "5e3720", cream = true, drizzle = "5e3720", accent = "5e3720"}},
+  {"Matcha Latte",      {vessel = "cup", liquid = "8ab85a", art = "f3ead6", steam = true}},
+  {"London Fog",        {vessel = "mug", liquid = "b59a7a", foam = "f3ead6", accent = "8a9096", steam = true}},
+  {"Jasmine Milk Tea",  {vessel = "cup", liquid = "e0cf9a", art = "ffffff", steam = true}},
+  {"Iced Coffee",       {vessel = "glass", layers = {{"5e3720", 0.6}, {"c8a27a", 0.4}}, ice = true, straw = "f3ead6"}},
+  {"Hot Chocolate",     {vessel = "mug", liquid = "4a2c1d", cream = true, crumbs = "7a4a2e", accent = "b8423f"}},
+  {"Cold Brew",         {vessel = "glass", layers = {{"3a2216", 1}}, ice = true, straw = "2a2230"}},
+  {"Coconut Cold Brew", {vessel = "glass", layers = {{"3a2216", 0.6}, {"e8d9b5", 0.4}}, ice = true, flakes = "ffffff"}},
+  {"Caramel Macchiato", {vessel = "glass", layers = {{"f3ead6", 0.5}, {"a8693f", 0.5}}, foam = "f7f4ec", drizzle = "b8702a"}},
+  {"Honeycomb Latte",   {vessel = "mug", liquid = "c8a27a", foam = "f3ead6", honeycomb = true, accent = "e0a040"}},
+  {"Biscoff Latte",     {vessel = "mug", liquid = "b5835a", cream = true, crumbs = "b5773a", accent = "a8693f"}},
+  {"White Mocha",       {vessel = "mug", liquid = "f0e2c8", cream = true, drizzle = "d8c09a", accent = "e0d2b2"}},
+  {"Skinny Latte",      {vessel = "cup", liquid = "d8c3a0", art = "ffffff", steam = true}},
+  {"Breve",             {vessel = "cup", liquid = "a87a50", art = "f3ead6"}},
+  {"Vienna Coffee",     {vessel = "glass", layers = {{"4a2c1d", 1}}, cream = true, top = 9}},
+  {"Matcha Fizz",       {vessel = "glass", layers = {{"a6cf7a", 1}}, ice = true, bubbles = true, straw = "6fa04a"}},
+  {"Pistachio Matcha",  {vessel = "cup", liquid = "c5d98a", art = "dcebc0", steam = true}},
+  {"Matcha Cloud",      {vessel = "glass", layers = {{"f3ead6", 1}}, ice = true, foam = "a6cf7a", foamH = 8, straw = "6fa04a"}},
+  {"Cheese Foam Tea",   {vessel = "glass", layers = {{"e0c070", 1}}, ice = true, foam = "fff3c8", foamH = 7}},
+  {"Sesame Hojicha",    {vessel = "mug", liquid = "a8693f", foam = "e3d3b0", crumbs = "2a2230", accent = "40454a"}},
+  {"Ube Latte",         {vessel = "glass", layers = {{"8a5fb0", 0.5}, {"e8d9b5", 0.5}}, ice = true, straw = "a98bd0"}},
+  {"_Default",          {vessel = "cup", liquid = "a8693f", art = "f3ead6"}},
+}
+local drinkdir = app.params["drinkdir"]
+if drinkdir then
+  local DW, DH = 40, 48
+  local pc = app.pixelColor
+  local CLEAR = pc.rgba(0, 0, 0, 0)
+  local function hexrgb(hex) return tonumber(hex:sub(1, 2), 16), tonumber(hex:sub(3, 4), 16), tonumber(hex:sub(5, 6), 16) end
+  -- t > 0 mixes toward white, t < 0 toward black
+  local function shade(hex, t)
+    local r, g, b = hexrgb(hex)
+    local function m(v) return math.floor((t >= 0 and v + (255 - v) * t or v * (1 + t)) + 0.5) end
+    return pc.rgba(m(r), m(g), m(b), 255)
+  end
+  local function col(hex) return shade(hex, 0) end
+
+  for _, entry in ipairs(DRINKS) do
+    local name, d = entry[1], entry[2]
+    local img = Image(DW, DH, ColorMode.RGB)
+    local function px(x, y, c) if x >= 0 and y >= 0 and x < DW and y < DH then img:drawPixel(x, y, c) end end
+    local function fill(x, y, w, h, c) for j = y, y + h - 1 do for i = x, x + w - 1 do px(i, j, c) end end end
+    local function ell(cx, cy, rx, ry, c)
+      for y = math.floor(cy - ry), math.ceil(cy + ry) do for x = math.floor(cx - rx), math.ceil(cx + rx) do
+        local a, b = (x - cx) / rx, (y - cy) / ry
+        if a * a + b * b <= 1 then px(x, y, c) end
+      end end
+    end
+    local function lighten(x, y, t)
+      if x < 0 or y < 0 or x >= DW or y >= DH then return end
+      local v = img:getPixel(x, y)
+      if pc.rgbaA(v) == 0 then return end
+      local function m(c) return math.floor(c + (255 - c) * t + 0.5) end
+      px(x, y, pc.rgba(m(pc.rgbaR(v)), m(pc.rgbaG(v)), m(pc.rgbaB(v)), 255))
+    end
+    local function steam(y0)
+      for _, sx in ipairs({13, 19, 25}) do
+        for k = 0, 6 do px(sx + ((k // 2) % 2), y0 - k - (sx == 19 and 1 or 0), P.grayLt) end
+      end
+    end
+    local function dots(color, spots) for _, s in ipairs(spots) do px(s[1], s[2], col(color)) end end
+    local function zigzag(color, x0, x1, y) for x = x0, x1 do px(x, y + ((x // 2) % 2), col(color)) end end
+    -- whipped cream piled on top, its base at y
+    local function cream(cx, y, rx)
+      ell(cx, y - 3, rx, 4.5, P.ink); ell(cx, y - 3, rx - 1, 3.5, P.white)
+      ell(cx + 2, y - 2, rx - 4, 1.5, P.cream)
+      px(math.floor(cx), y - 8, P.ink); px(math.floor(cx), y - 7, P.white); px(math.floor(cx) + 1, y - 8, P.ink)
+    end
+
+    if d.vessel == "glass" then
+      local L, R, T, B = 11, 28, 8, 45
+      local top = d.top or 11
+      fill(L + 1, T + 1, R - L - 1, top - T - 1, C("dff3f8", 110)) -- empty glass above the drink
+      local total, y = B - top, B - 1
+      for i, layer in ipairs(d.layers) do
+        local h = i == #d.layers and y - top + 1 or math.floor(total * layer[2] + 0.5)
+        for j = 0, h - 1 do fill(L + 1, y - j, R - L - 1, 1, j == h - 1 and shade(layer[1], 0.3) or col(layer[1])) end
+        y = y - h
+      end
+      local fh = d.foam and (d.foamH or 4) or 0
+      if d.foam then
+        for j = 0, fh - 1 do fill(L + 1, top + j, R - L - 1, 1, j == 0 and shade(d.foam, 0.4) or col(d.foam)) end
+        for x = L + 1, R - 1, 3 do px(x, top - 1, col(d.foam)) end
+      end
+      if d.ice then
+        for _, c in ipairs({{13, 2}, {20, 6}, {14, 12}, {21, 17}, {15, 23}}) do
+          local cx, cy = c[1], top + fh + c[2]
+          if cy + 4 < B then
+            fill(cx, cy, 5, 5, C("8fd9e8")); fill(cx + 1, cy + 1, 3, 3, C("e4f8fc")); px(cx + 1, cy + 1, P.white)
+          end
+        end
+      end
+      if d.bubbles then dots("ffffff", {{14, 30}, {23, 26}, {17, 38}, {25, 35}, {20, 21}, {15, 19}, {24, 41}, {18, 33}}) end
+      if d.flakes then dots(d.flakes, {{13, top}, {16, top - 1}, {19, top}, {22, top - 1}, {25, top}, {18, top + 1}, {24, top + 1}}) end
+      if d.drizzle then
+        zigzag(d.drizzle, L + 1, R - 1, top)
+        for j = 0, 5 do px(L + 2, top + fh + j, col(d.drizzle)); px(R - 3, top + fh + j - 2, col(d.drizzle)) end
+      end
+      if d.straw then
+        for sy = 0, top + 8 do
+          local sx = 26 - sy // 5
+          px(sx, sy, col(d.straw)); px(sx + 1, sy, shade(d.straw, -0.3))
+        end
+      end
+      -- the glass itself: pale walls, a rim and a highlight down the left side
+      fill(L, T, 1, B - T, C("8fc9da")); fill(R, T, 1, B - T, C("8fc9da")); fill(L + 1, B, R - L - 1, 1, C("8fc9da"))
+      fill(L, T, R - L + 1, 1, C("bdeffd"))
+      for hy = top + 1, B - 3 do if hy % 6 ~= 0 then lighten(L + 2, hy, 0.45) end end
+      if d.cream then cream(19.5, T + 1, 9) end
+    elseif d.vessel == "mug" then
+      local L, R, T, B = 8, 29, 18, 44
+      local M, MS = P.cream, P.creamDk
+      fill(29, 23, 6, 15, P.ink); fill(30, 24, 4, 13, M); fill(31, 26, 2, 9, CLEAR)
+      fill(L, T, R - L + 1, B - T + 1, P.ink); fill(L + 1, T + 1, R - L - 1, B - T - 1, M)
+      fill(R - 4, T + 1, 3, B - T - 1, MS)
+      px(L, B, CLEAR); px(R, B, CLEAR)
+      if d.accent then fill(L + 1, T + 13, R - L - 1, 2, col(d.accent)) end
+      ell(18.5, T, 10.5, 3.5, P.ink); ell(18.5, T, 9.5, 2.6, col(d.liquid))
+      ell(18.5, T + 1, 8, 1, shade(d.liquid, -0.15))
+      if d.foam then ell(18.5, T - 0.3, 6.5, 1.6, col(d.foam)) end
+      local ty = T
+      if d.cream then cream(18.5, T, 9); ty = T - 5 end
+      if d.drizzle then zigzag(d.drizzle, 12, 25, ty - 1) end
+      if d.crumbs then dots(d.crumbs, {{13, ty}, {16, ty - 1}, {19, ty}, {22, ty - 1}, {24, ty + 1}, {17, ty + 1}}) end
+      if d.honeycomb then
+        fill(20, T - 3, 6, 4, P.ink); fill(21, T - 2, 4, 2, P.yellow); px(22, T - 2, P.orange); px(23, T - 1, P.orange)
+      end
+      if d.steam then steam(d.cream and T - 9 or T - 3) end
+    elseif d.vessel == "cup" then
+      local W, WS = P.white, P.grayLt
+      ell(19.5, 42, 18, 3.5, P.ink); ell(19.5, 42, 17, 2.5, P.creamDk)
+      fill(33, 27, 5, 8, P.ink); fill(34, 28, 3, 6, W); fill(35, 29, 1, 4, CLEAR)
+      for y = 24, 39 do
+        local hw = 13 - math.max(0, y - 34)
+        fill(20 - hw, y, 2 * hw, 1, P.ink)
+        if y < 39 then fill(21 - hw, y, 2 * hw - 2, 1, W); fill(16 + hw, y, 3, 1, WS) end
+      end
+      ell(19.5, 24, 13, 3.5, P.ink); ell(19.5, 24, 12, 2.6, col(d.liquid))
+      ell(19.5, 25, 10, 1, shade(d.liquid, -0.15))
+      if d.art then ell(19.5, 24, 4, 1.3, col(d.art)); px(17, 23, col(d.art)); px(22, 23, col(d.art)) end
+      if d.steam then steam(20) end
+    elseif d.vessel == "bowl" then
+      local T = 26
+      for y = T, T + 13 do
+        local hw = math.floor(15 * math.sqrt(math.max(0, 1 - ((y - T) / 14) ^ 2)))
+        if hw > 0 then
+          fill(20 - hw, y, 2 * hw, 1, P.ink)
+          fill(21 - hw, y, 2 * hw - 2, 1, P.terracotta)
+          fill(20 + hw - 5, y, 4, 1, P.terraDk)
+        end
+      end
+      fill(14, T + 13, 12, 3, P.ink); fill(15, T + 13, 10, 2, P.terraDk)
+      ell(19.5, T, 15.5, 3, P.ink); ell(19.5, T, 14.5, 2, col(d.liquid))
+      ell(17, T, 7, 1, col(d.foam)); dots(d.foam, {{24, T - 1}, {26, T}, {11, T}})
+      if d.steam then steam(T - 4) end
+    end
+    img:saveAs(app.fs.joinPath(drinkdir, name .. ".png"))
+  end
+end

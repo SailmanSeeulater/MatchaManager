@@ -152,7 +152,7 @@ public class CustomerManager : MonoBehaviour
         cup.Dumped += DumpPenalty;
         cup.Spent += Spend;
         if (snacks != null) snacks.Spent += Spend;
-        cup.Changed += RefreshRecipe;
+        cup.Changed += OnCupChanged;
         if (snacks != null) snacks.Changed += RefreshRecipe;
         for (int i = 0; i < pickup.Length; i++)
         {
@@ -479,23 +479,43 @@ public class CustomerManager : MonoBehaviour
         }
     }
 
+    // Who this drink would go to if served now: of everyone whose order it matches (recipes can
+    // overlap, e.g. a Sunday Matcha made with pistachio milk is also a Pistachio Matcha), someone the
+    // tray's snack is right for, then whoever has waited longest. Null = nobody ordered it.
+    public Patron RecipientOf(Dictionary<DrinkNode, int> drink)
+    {
+        var traySnack = snacks != null ? snacks.TraySnack : null;
+        var trayHeat = snacks != null ? snacks.TrayHeat : Heat.None;
+        return waiting.Where(p => p != null && p.stage == Stage.Waiting && p.order.Check(drink).Correct)
+            .OrderBy(m => m.order.snack != null && m.order.SnackProblem(traySnack, trayHeat) != null ? 1 : 0)
+            .ThenBy(m => m.ticketTime)
+            .FirstOrDefault();
+    }
+
+    // Once the cup makes someone's order, the glass shows the finished drink, and the recipe panel
+    // switches to that customer when it was showing someone else. A mumbled order stays a secret
+    // (showing it would answer the guess).
+    void OnCupChanged()
+    {
+        var p = cup.IsEmpty ? null : RecipientOf(cup.Counts());
+        if (p != null && p.order.unclear) p = null;
+        bool wasShowing = cup.ShowingFinished;
+        cup.ShowFinished(p?.order.recipe.sprite, p != null ? $"{p.order.recipe.displayName.ToUpper()} FOR #{p.spot + 1}!" : null);
+        if (p != null && !wasShowing) SoundFX.Play(Sfx.Finished);
+        if (p != null && p.spot != selected) Select(p.spot); // refreshes the recipe panel too
+        else RefreshRecipe();
+    }
+
     // Cup.Serve asks this first: returns false when nobody ordered this drink (it stays in the cup).
     bool TryServe(Dictionary<DrinkNode, int> drink)
     {
-        var matches = waiting.Where(p => p != null && p.stage == Stage.Waiting && p.order.Check(drink).Correct).ToList();
-        if (matches.Count == 0)
+        var p = RecipientOf(drink);
+        if (p == null)
         {
             LastReaction = null;
             Debug.Log("[Customers] Nobody ordered that drink");
             return false;
         }
-        var traySnack = snacks != null ? snacks.TraySnack : null;
-        var trayHeat = snacks != null ? snacks.TrayHeat : Heat.None;
-        // among matches, someone the tray's snack is right for, then whoever has waited longest
-        var p = matches
-            .OrderBy(m => m.order.snack != null && m.order.SnackProblem(traySnack, trayHeat) != null ? 1 : 0)
-            .ThenBy(m => m.ticketTime)
-            .First();
         // the tray only goes out with orders that include a snack
         var (got, heat) = p.order.snack != null && snacks != null ? snacks.TakeTray() : (null, Heat.None);
         Today.served++;

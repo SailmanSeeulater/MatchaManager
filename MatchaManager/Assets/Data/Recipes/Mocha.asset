@@ -27,5 +27,5 @@ MonoBehaviour:
     label: Milk
     optional: 0
   price: 6
-  patienceSeconds: 50
-  defaultsVersion: 3
+  sprite: {fileID: 21300000, guid: 1001050a102fc4a5bbf0a46d4b9139f5, type: 3}
+  defaultsVersion: 4

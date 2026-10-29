@@ -27,5 +27,5 @@ MonoBehaviour:
     label: Sweetener
     optional: 1
   price: 5
-  patienceSeconds: 40
-  defaultsVersion: 3
+  sprite: {fileID: 21300000, guid: 24ab802587aad4c6f97cb2c7f8bae431, type: 3}
+  defaultsVersion: 4

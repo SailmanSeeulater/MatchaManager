@@ -25,5 +25,8 @@ public class DrinkRecipe : ScriptableObject
     public List<Line> lines = new List<Line>();
     [Tooltip("Coins for a correct drink; a happy customer tips up to the same again")]
     public int price = 5;
+    [Tooltip("The finished drink, shown in place of the glass once the cup matches an order. " +
+             "Build Scene fills it from Assets/Art/Drinks/<name>.png")]
+    public Sprite sprite;
     [HideInInspector] public int defaultsVersion; // lets Import Drink Tree update starter recipes it made
 }

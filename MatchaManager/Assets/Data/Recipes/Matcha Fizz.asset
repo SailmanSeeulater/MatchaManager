@@ -31,5 +31,5 @@ MonoBehaviour:
     label: Syrup
     optional: 1
   price: 6
-  patienceSeconds: 40
-  defaultsVersion: 3
+  sprite: {fileID: 21300000, guid: 64bd617febab741ea82e86a7c75e7adf, type: 3}
+  defaultsVersion: 4

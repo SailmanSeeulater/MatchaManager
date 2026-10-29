@@ -114,7 +114,7 @@ public static class DrinkTreeImporter
     // Between them every ingredient in the tree is wanted by some drink: named when there's only
     // one of it, or through an ANY line where the player picks the grade (milks, beans, chocolates).
     // Lines: node name, portions, label, optional ("no ..." allowed).
-    const int DefaultsVersion = 3;
+    const int DefaultsVersion = 4;
 
     static void CreateDefaultRecipes()
     {
@@ -131,7 +131,7 @@ public static class DrinkTreeImporter
         Recipe("Hojicha Latte", 5, One("Hojicha"), One("Hot Water"), anyMilk, sweetener);
         Recipe("Iced Matcha", 5, matcha, One("Cold Water"), One("Ice"), sweetener);
         Recipe("Mocha", 6, coffee, ("Chocolate", 1, "Chocolate", false), anyMilk);
-        Recipe("Matcha Latte", 5, matcha, One("Hot Water"), anyMilk, sweetener);
+        Recipe("Matcha Latte", 5, matcha, One("Hot Water"), ("Dairy", 2, "Milk", false), sweetener);
         Recipe("London Fog", 6, One("Earl Gray"), One("Hot Water"), anyMilk, One("Vanilla Syrup", true));
         Recipe("Jasmine Milk Tea", 5, One("Jasmine"), One("Hot Water"), milk, sweetener);
         Recipe("Iced Coffee", 5, coffee, One("Ice"), One("Cold Water"), milk, sweetener);
@@ -162,6 +162,7 @@ public static class DrinkTreeImporter
     //      drinks with Cold Water
     //   3: every hot drink made with water uses Hot Water (Sunday Matcha), and hot matcha
     //      drinks whisk their matcha in some (Matcha Latte, Pistachio Matcha)
+    //   4: Matcha Latte takes a double milk, so it isn't the same drink as Sunday Matcha
     public static void MigrateRecipes()
     {
         DrinkNode Node(string name) => AssetDatabase.LoadAssetAtPath<DrinkNode>($"{OutDir}/{name}.asset");
@@ -214,6 +215,14 @@ public static class DrinkTreeImporter
                     recipe.lines.Insert(matchaLine + 1, new DrinkRecipe.Line { node = hotWater, portions = 1 });
                 }
                 recipe.defaultsVersion = 3;
+                EditorUtility.SetDirty(recipe);
+            }
+            if (recipe.defaultsVersion < 4 && regrouped)
+            {
+                if (recipe.name == "Matcha Latte")
+                    foreach (var line in recipe.lines)
+                        if (line.node != null && line.node.displayName == "Dairy" && line.portions == 1) line.portions = 2;
+                recipe.defaultsVersion = 4;
                 EditorUtility.SetDirty(recipe);
             }
         }

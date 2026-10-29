@@ -8,7 +8,7 @@ using UnityEngine.UI;
 // (made by Tools/make_sfx.py). Gameplay code calls SoundFX.Play(Sfx.X); it does
 // nothing outside Play mode, so the headless checks stay silent.
 // Press M to mute or unmute.
-public enum Sfx { Click, Pour, CupFull, Dump, ServeGood, ServeBad, Arrive, WalkOut, Pick, Tray, HeatStart, Ready, Burnt, DayEnd, DayStart, Order }
+public enum Sfx { Click, Pour, CupFull, Dump, ServeGood, ServeBad, Arrive, WalkOut, Pick, Tray, HeatStart, Ready, Burnt, DayEnd, DayStart, Order, Finished }
 
 public class SoundFX : MonoBehaviour
 {

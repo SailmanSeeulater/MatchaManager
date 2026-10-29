@@ -20,6 +20,7 @@ public static class MatchaSceneBuilder
     const string SnackDir = "Assets/Data/Snacks";
     const string AudioDir = "Assets/Audio";
     const string IconDir = "Assets/Art/Icons";
+    const string DrinkArtDir = "Assets/Art/Drinks";
     const int RefWidth = 480, RefHeight = 270;
 
     // text sizes: the pixel font is crisp at whole multiples of its 7px line
@@ -187,7 +188,10 @@ public static class MatchaSceneBuilder
         // layers stack inside the glass shape: Cup_Mask is the glass interior
         var contents = AddImage(drink, "Cup_Mask", "CupContents");
         contents.gameObject.AddComponent<Mask>().showMaskGraphic = false;
-        AddImage(drink, "Cup");
+        var glass = AddImage(drink, "Cup");
+        // the finished drink's picture takes the glass's place once the cup matches an order
+        var finished = AddRect(drink, "FinishedDrink", 404, 106, 40, 48, Color.white).GetComponent<Image>();
+        finished.enabled = false;
         // DUMP starts the drink over, at a patience cost to everyone waiting
         var dump = AddButton(drink, "Dump_Button");
         var dumpRect = rects["Dump_Button"];
@@ -196,6 +200,8 @@ public static class MatchaSceneBuilder
 
         var cup = contents.gameObject.AddComponent<Cup>();
         cup.contents = contents;
+        cup.glass = glass.GetComponent<Image>();
+        cup.finishedView = finished;
         cup.serveButton = serve.GetComponent<Button>();
         cup.dumpButton = dump.GetComponent<Button>();
         cup.readout = readout;
@@ -336,6 +342,7 @@ public static class MatchaSceneBuilder
                 .Select(g => AssetDatabase.LoadAssetAtPath<DrinkRecipe>(AssetDatabase.GUIDToAssetPath(g)))
                 .OrderBy(r => r.name).ToList();
         if (customers.recipes.Count == 0) Debug.LogWarning("[Matcha] No recipes yet: run Matcha > Import Drink Tree, then rebuild.");
+        AssignDrinkSprites(customers.recipes);
         customers.balance = balance;
         customers.drinkTree = browser.root;
         customers.cup = cup;
@@ -600,6 +607,20 @@ public static class MatchaSceneBuilder
         return btn;
     }
 
+    // Each recipe's finished-drink picture: Assets/Art/Drinks/<name>.png, or a plain cup for recipes
+    // without one. Pictures picked in the Inspector are kept.
+    static void AssignDrinkSprites(List<DrinkRecipe> recipes)
+    {
+        var fallback = AssetDatabase.LoadAssetAtPath<Sprite>($"{DrinkArtDir}/_Default.png");
+        foreach (var recipe in recipes)
+        {
+            if (recipe.sprite != null) continue;
+            recipe.sprite = AssetDatabase.LoadAssetAtPath<Sprite>($"{DrinkArtDir}/{recipe.displayName}.png") ?? fallback;
+            EditorUtility.SetDirty(recipe);
+        }
+        AssetDatabase.SaveAssets();
+    }
+
     // Icon sprite for a drink-tree name ("Oat Milk" -> Assets/Art/Icons/Oat Milk.png), null if none.
     static Sprite Icon(string name) =>
         string.IsNullOrEmpty(name) ? null : AssetDatabase.LoadAssetAtPath<Sprite>($"{IconDir}/{name}.png");
@@ -777,9 +798,9 @@ public static class MatchaSceneBuilder
         // patience from key presses, fast bonus, late pay cut: roomier on easy, tighter on hard
         var presetsV3 = new System.Action<Balance>[]
         {
-            b => { b.patienceBase = 14; b.secondsPerPress = 5.5f; b.fastZone = 0.55f; b.fastBonus = 0.5f; b.lateZone = 0.2f; b.latePay = 0.75f; },
+            b => { b.patienceBase = 17; b.secondsPerPress = 7.5f; b.fastZone = 0.55f; b.fastBonus = 0.5f; b.lateZone = 0.2f; b.latePay = 0.75f; },
             b => { },
-            b => { b.patienceBase = 8; b.secondsPerPress = 2.8f; b.fastZone = 0.75f; b.fastBonus = 0.6f; b.lateZone = 0.35f; b.latePay = 0.4f; },
+            b => { b.patienceBase = 11; b.secondsPerPress = 4.8f; b.fastZone = 0.75f; b.fastBonus = 0.6f; b.lateZone = 0.35f; b.latePay = 0.4f; },
         };
         // mumble peek: fewer clear letters, sliding faster on hard
         var presetsV4 = new System.Action<Balance>[]
@@ -787,6 +808,13 @@ public static class MatchaSceneBuilder
             b => { },
             b => { },
             b => { b.peekLetters = 2; b.peekSpeed = 4.5f; b.peekPause = 1; },
+        };
+        // more patience everywhere: +3 starting seconds and +2 seconds per press (Oct 2026)
+        var presetsV5 = new System.Action<Balance>[]
+        {
+            b => { b.patienceBase = 17; b.secondsPerPress = 7.5f; },
+            b => { b.patienceBase = 13; b.secondsPerPress = 5.8f; },
+            b => { b.patienceBase = 11; b.secondsPerPress = 4.8f; },
         };
         var result = new Balance[DifficultyPaths.Length];
         for (int i = 0; i < DifficultyPaths.Length; i++)
@@ -821,6 +849,12 @@ public static class MatchaSceneBuilder
             {
                 presetsV4[i](result[i]);
                 result[i].presetVersion = 4;
+                EditorUtility.SetDirty(result[i]);
+            }
+            if (result[i].presetVersion < 5)
+            {
+                presetsV5[i](result[i]);
+                result[i].presetVersion = 5;
                 EditorUtility.SetDirty(result[i]);
             }
         }

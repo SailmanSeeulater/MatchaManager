@@ -23,8 +23,8 @@ MonoBehaviour:
   arrivalInterval: {x: 14, y: 24}
   linePatienceRate: 0.4
   orderSeconds: 2
-  patienceBase: 10
-  secondsPerPress: 3.8
+  patienceBase: 13
+  secondsPerPress: 5.8
   fastZone: 0.65
   fastBonus: 0.5
   lateZone: 0.3
@@ -45,7 +45,7 @@ MonoBehaviour:
   peekLetters: 3
   peekSpeed: 3
   peekPause: 1.5
-  presetVersion: 4
+  presetVersion: 5
   startingCoins: 20
   costMultiplier: 1
   dumpPenalty: 0.1

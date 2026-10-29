@@ -23,7 +23,7 @@ MonoBehaviour:
     label: 
     optional: 0
   - node: {fileID: 11400000, guid: ad974bec229294f90b7b6f27e3077263, type: 2}
-    portions: 1
+    portions: 2
     label: Milk
     optional: 0
   - node: {fileID: 11400000, guid: 8ecbe7eff22a24ed491ce1ad0cb4b547, type: 2}
@@ -31,5 +31,5 @@ MonoBehaviour:
     label: Sweetener
     optional: 1
   price: 5
-  patienceSeconds: 40
-  defaultsVersion: 3
+  sprite: {fileID: 21300000, guid: 4b9f96bbe8b5a4937b1506868e1afa53, type: 3}
+  defaultsVersion: 4

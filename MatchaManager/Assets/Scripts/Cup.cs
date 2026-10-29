@@ -15,6 +15,9 @@ public class Cup : MonoBehaviour
     public Button serveButton;
     public Button dumpButton;
     public TMP_Text readout;
+    public Image glass;
+    [Tooltip("Shows the finished drink instead of the glass and its layers once the cup matches an order")]
+    public Image finishedView;
 
     [Header("Solid ingredients")]
     public Sprite powderGrain;      // tiled over powder layers
@@ -38,6 +41,7 @@ public class Cup : MonoBehaviour
     [Tooltip("Set from the difficulty: multiplies ingredient costs")]
     public float costMultiplier = 1;
     int spentInCup;
+    string finishedLabel; // e.g. "SUNDAY MATCHA FOR #2", null while the drink isn't anyone's yet
 
     public int CostOf(DrinkNode ingredient) => Mathf.RoundToInt(ingredient.cost * costMultiplier);
     // Fires whenever the contents change.
@@ -197,9 +201,32 @@ public class Cup : MonoBehaviour
     void Refresh()
     {
         serveButton.interactable = !IsEmpty && hasCustomer;
-        readout.text = Describe() + (spentInCup > 0 ? $"\n<color=#8a2e2c>COST ${spentInCup}</color>" : "");
+        ShowReadout();
         Changed?.Invoke();
     }
+
+    void ShowReadout() =>
+        readout.text = (finishedLabel != null ? $"<color=#2e5222>{finishedLabel}</color>" : Describe()) +
+                       (spentInCup > 0 ? $"\n<color=#8a2e2c>COST ${spentInCup}</color>" : "");
+
+    // CustomerManager calls this when the cup matches (or stops matching) someone's order:
+    // the glass turns into the finished drink, and the readout says whose it is.
+    public void ShowFinished(Sprite sprite, string label)
+    {
+        finishedLabel = sprite != null ? label : null;
+        bool show = finishedLabel != null;
+        if (finishedView != null)
+        {
+            finishedView.sprite = sprite;
+            finishedView.enabled = show;
+        }
+        if (glass != null) glass.enabled = !show;
+        if (!contents.TryGetComponent<CanvasGroup>(out var layersGroup)) layersGroup = contents.gameObject.AddComponent<CanvasGroup>();
+        layersGroup.alpha = show ? 0 : 1;
+        ShowReadout();
+    }
+
+    public bool ShowingFinished => finishedLabel != null;
 
     // e.g. "CEREMONIAL MATCHA, CANE SUGAR x2", in the order things were first added
     string Describe()
