@@ -52,6 +52,10 @@ public class SnackStation : MonoBehaviour
 
     // Fires when the tray changes.
     public event Action Changed;
+    // Coins spent: a snack costs the shop when it leaves the case (onto the tray, or into an appliance).
+    public event Action<int> Spent;
+
+    public int CostOf(Snack snack) => Mathf.RoundToInt(snack.cost * (balance != null ? balance.costMultiplier : 1));
 
     public Snack[] Menu => slots.Select(s => s.snack).Where(s => s != null).Distinct().ToArray();
 
@@ -96,6 +100,7 @@ public class SnackStation : MonoBehaviour
             return;
         }
         Held = null;
+        Spent?.Invoke(CostOf(snack));
         PutOnTray(snack, Heat.None);
     }
 
@@ -107,6 +112,7 @@ public class SnackStation : MonoBehaviour
             if (Held == null) return;
             a.snack = Held;
             a.time = 0;
+            Spent?.Invoke(CostOf(Held));
             SoundFX.Play(Sfx.HeatStart);
             Held = null;
             Refresh();

@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb8d9d955bb76466e910f4baa31428f6, type: 3}
+  m_Name: Balance Easy
+  m_EditorClassIdentifier: Assembly-CSharp::Balance
+  difficultyName: EASY
+  description: PATIENT, SIMPLE ORDERS
+  realSecondsPerDay: 300
+  openHour: 9
+  closeHour: 17
+  dailyGoal: 6
+  goalPerDay: 1
+  maxGoal: 16
+  arrivalInterval: {x: 18, y: 28}
+  patienceMultiplier: 1.7
+  hotSnackExtraPatience: 15
+  linePatienceRate: 0.3
+  orderSeconds: 2
+  snackChance: 0.3
+  changeChance: 0.3
+  changeChancePerDay: 0.02
+  maxChangeChance: 0.5
+  maxChanges: 1
+  addChance: 0
+  addMaxPixels: 4
+  doubleExtraChance: 0
+  unclearChance: 0
+  unclearChancePerDay: 0
+  maxUnclearChance: 0
+  wrongGuessPenalty: 0.1
+  guessBonus: 0.5
+  presetVersion: 2
+  startingCoins: 30
+  costMultiplier: 0.7
+  casualChance: 0.5
+  connoisseurChance: 0.1
+  connoisseurPerDay: 0.01
+  maxConnoisseur: 0.2
+  palateTip: {x: 0.5, y: 1, z: 1.5}
+  cheapTipPenalty: 0.5
+  dumpPenalty: 0.1
+  tipMultiplier: 1.2
+  harderPerDay: 0.05
+  hardestAt: 0.6
+  microwaveReady: 4
+  microwaveBurn: 10
+  ovenReady: 7
+  ovenBurn: 20

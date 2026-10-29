@@ -139,6 +139,21 @@ public static class MatchaSceneBuilder
         Wrap(order);
         order.lineSpacing = LineGap(-1);
 
+        // guess bubbles for unclear orders: CustomerManager moves them over the customer being asked
+        var guessPopup = new GameObject("GuessPopup", typeof(RectTransform)).GetComponent<RectTransform>();
+        guessPopup.SetParent(shop, false);
+        Place(guessPopup, 0, 58, 76, 46);
+        var guessButtons = new Button[3];
+        var guessLabels = new TMP_Text[3];
+        for (int i = 0; i < guessButtons.Length; i++)
+        {
+            guessButtons[i] = AddRectButton(guessPopup, "Guess_" + (i + 1), 1, 1 + 15 * i, 74, 13, Color.white);
+            var rt = (RectTransform)guessButtons[i].transform;
+            AddText(rt, "Key", 3, 3, 5, 7, (i + 1).ToString(), Px, new Color(Ink.r, Ink.g, Ink.b, 0.45f), TextAlignmentOptions.TopLeft);
+            guessLabels[i] = AddText(rt, "Label", 9, 0, 64, 13, "", Px, Ink, TextAlignmentOptions.Left);
+        }
+        guessPopup.gameObject.SetActive(false);
+
         // --- Drink station (top-right) ---
         var drink = Group(screen, "DrinkStation");
         AddImage(drink, "Drink_Station_Background");
@@ -184,6 +199,7 @@ public static class MatchaSceneBuilder
         cup.serveButton = serve.GetComponent<Button>();
         cup.dumpButton = dump.GetComponent<Button>();
         cup.readout = readout;
+        cup.costMultiplier = balance.costMultiplier;
         cup.powderGrain = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Cup/Powder_Grain.png");
         cup.iceCube = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Cup/Ice_Cube.png");
         var iceFront = new GameObject("IceFront", typeof(RectTransform)).GetComponent<RectTransform>();
@@ -204,6 +220,8 @@ public static class MatchaSceneBuilder
         {
             AssignIcons(browser.root, Icon("_Default"));
             AssignLooks(browser.root, new List<string>());
+            AssignCosts(browser.root);
+            DrinkTreeImporter.MigrateRecipes();
             AssetDatabase.SaveAssets();
         }
         browser.backButton = back.GetComponent<Button>();
@@ -217,7 +235,7 @@ public static class MatchaSceneBuilder
         Snack[] coldSnacks =
         {
             EnsureSnack("Matcha Roll", "Cold_Snack_1", false, 3, "Roll"),
-            EnsureSnack("Strawberry Shortcake", "Cold_Snack_2", false, 4, "Cake"),
+            EnsureSnack("Strawberry Shortcake", "Cold_Snack_2", false, 4, "Cake", 2),
             EnsureSnack("Hanami Dango", "Cold_Snack_3", false, 3, "Dango"),
         };
         var danish = EnsureSnack("Danish", "Hot_Snack_1", true, 3, "Danish");
@@ -324,6 +342,9 @@ public static class MatchaSceneBuilder
         customers.snacks = snacks;
         customers.customer = customer;
         customers.pickup = pickupSpots;
+        customers.guessPopup = guessPopup;
+        customers.guessButtons = guessButtons;
+        customers.guessLabels = guessLabels;
         customers.lineViews = lineViews;
         customers.looks = looks;
         customers.orderUI = orderGroup;
@@ -427,16 +448,16 @@ public static class MatchaSceneBuilder
             Hint(parent, right - (key.Length * 4 - 1), y, key, color);
 
         var bindings = new List<KeyboardShortcuts.Binding>();
-        void Bind(Key key, Key alt, RectTransform button) =>
-            bindings.Add(new KeyboardShortcuts.Binding { key = key, altKey = alt, button = button.GetComponent<Button>() });
+        void Bind(Key key, Key alt, RectTransform button, Key alt2 = Key.None) =>
+            bindings.Add(new KeyboardShortcuts.Binding { key = key, altKey = alt, altKey2 = alt2, button = button.GetComponent<Button>() });
 
         for (int i = 0; i < slots.Length; i++)
         {
             Bind(Key.Digit1 + i, Key.Numpad1 + i, (RectTransform)slots[i].transform);
             Hint((RectTransform)slots[i].transform, 5, 13, (i + 1).ToString(), dimInk); // under the icon
         }
-        Bind(Key.Backspace, Key.Escape, back);
-        HintRight(back, rects["Back_Button"].w - 4, 2, "ESC", dimInk);
+        Bind(Key.Backspace, Key.Escape, back, Key.P);
+        HintRight(back, rects["Back_Button"].w - 4, 2, "ESC/P", dimInk);
         Bind(Key.Space, Key.Enter, serve);
         var serveRect = rects["Serve_Button"];
         Hint(drink, serveRect.x + serveRect.w / 2f - 10, 119, "SPACE", dimInk); // just above the SERVE label
@@ -592,6 +613,32 @@ public static class MatchaSceneBuilder
         foreach (var child in node.children) AssignIcons(child, node.icon);
     }
 
+    // Default cost per portion and quality stars, where the tree has a cheap and a premium choice.
+    // Applied once per ingredient (economyVersion); after that the Inspector values are yours.
+    static readonly Dictionary<string, (int cost, int quality)> Economy = new Dictionary<string, (int, int)>
+    {
+        { "Whole Milk", (1, 2) }, { "Half and Half", (1, 2) }, { "Heavy Cream", (2, 3) },
+        { "Oat Milk", (2, 2) }, { "Almond Milk", (2, 2) }, { "Soy Milk", (1, 1) }, { "Pistachio Milk", (3, 3) },
+        { "Ceremonial Matcha", (3, 3) }, { "Low-Grade Matcha", (1, 1) },
+        { "Hojicha", (2, 2) }, { "Jasmine", (1, 2) }, { "Earl Gray", (1, 2) },
+        { "Dark Chocolate", (2, 3) }, { "Milk Chocolate", (1, 2) }, { "White Chocolate", (1, 1) },
+        { "Real Vanilla", (2, 3) }, { "Synthetic Vanilla", (0, 1) },
+        { "Arabrica", (2, 3) }, { "Robusta", (1, 1) }, { "Decaf", (1, 2) },
+        { "Cane Sugar", (1, 2) }, { "White Sugar", (0, 1) }, { "Brown Sugar", (1, 2) }, { "Maple Sugar", (2, 3) }, { "Stevia", (1, 2) },
+        { "Water", (0, 0) }, { "Ice", (0, 0) },
+    };
+
+    static void AssignCosts(DrinkNode node)
+    {
+        if (node.IsIngredient && node.economyVersion < 1)
+        {
+            if (Economy.TryGetValue(node.displayName, out var e)) { node.cost = e.cost; node.quality = e.quality; }
+            node.economyVersion = 1;
+            EditorUtility.SetDirty(node);
+        }
+        foreach (var child in node.children) AssignCosts(child);
+    }
+
     // Resolves CupLook.Auto from the tree: Ice is ice, anything under Sweeteners or
     // Matcha is a powder, the rest are liquids. Looks picked in the Inspector are kept.
     static void AssignLooks(DrinkNode node, List<string> ancestors)
@@ -707,21 +754,50 @@ public static class MatchaSceneBuilder
                 b.microwaveBurn = 7; b.ovenBurn = 13;
             },
         };
+        // settings added after the first presets; applied once to assets made before them
+        var presetsV1 = new System.Action<Balance>[]
+        {
+            b => { b.unclearChance = 0; b.unclearChancePerDay = 0; b.maxUnclearChance = 0; }, // never on easy
+            b => { b.unclearChance = 0.15f; b.unclearChancePerDay = 0.02f; b.maxUnclearChance = 0.35f; },
+            b => { b.unclearChance = 0.3f; b.unclearChancePerDay = 0.03f; b.maxUnclearChance = 0.6f; },
+        };
+        // cost to operate: cheaper and more forgiving on easy, pricier with pickier customers on hard
+        var presetsV2 = new System.Action<Balance>[]
+        {
+            b => { b.startingCoins = 30; b.costMultiplier = 0.7f; b.casualChance = 0.5f; b.connoisseurChance = 0.1f; b.connoisseurPerDay = 0.01f; b.maxConnoisseur = 0.2f; },
+            b => { },
+            b => { b.startingCoins = 15; b.costMultiplier = 1.2f; b.casualChance = 0.2f; b.connoisseurChance = 0.35f; b.connoisseurPerDay = 0.03f; b.maxConnoisseur = 0.6f; },
+        };
         var result = new Balance[DifficultyPaths.Length];
         for (int i = 0; i < DifficultyPaths.Length; i++)
         {
             result[i] = AssetDatabase.LoadAssetAtPath<Balance>(DifficultyPaths[i]);
-            if (result[i] != null) continue;
-            Directory.CreateDirectory(Path.GetDirectoryName(DifficultyPaths[i]));
-            result[i] = ScriptableObject.CreateInstance<Balance>();
-            presets[i](result[i]);
-            AssetDatabase.CreateAsset(result[i], DifficultyPaths[i]);
+            if (result[i] == null)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(DifficultyPaths[i]));
+                result[i] = ScriptableObject.CreateInstance<Balance>();
+                presets[i](result[i]);
+                AssetDatabase.CreateAsset(result[i], DifficultyPaths[i]);
+            }
+            if (result[i].presetVersion < 1)
+            {
+                presetsV1[i](result[i]);
+                result[i].presetVersion = 1;
+                EditorUtility.SetDirty(result[i]);
+            }
+            if (result[i].presetVersion < 2)
+            {
+                presetsV2[i](result[i]);
+                result[i].presetVersion = 2;
+                EditorUtility.SetDirty(result[i]);
+            }
         }
+        AssetDatabase.SaveAssets();
         return result;
     }
 
     // Creates a snack asset the first time; after that it keeps whatever was edited in the Inspector.
-    static Snack EnsureSnack(string name, string layer, bool hot, int price, string ticketName)
+    static Snack EnsureSnack(string name, string layer, bool hot, int price, string ticketName, int cost = 1)
     {
         var path = $"{SnackDir}/{name}.asset";
         var snack = AssetDatabase.LoadAssetAtPath<Snack>(path);
@@ -742,6 +818,7 @@ public static class MatchaSceneBuilder
         snack.needsHeating = hot;
         snack.ticketName = ticketName;
         snack.price = price;
+        snack.cost = cost;
         AssetDatabase.CreateAsset(snack, path);
         return snack;
     }

@@ -13,6 +13,8 @@ public class Snack : ScriptableObject
     [Tooltip("Must be heated in the microwave or toaster oven before serving")]
     public bool needsHeating;
     public int price = 3;
+    [Tooltip("Coins it costs the shop when it leaves the case")]
+    public int cost = 1;
 
     public string TicketName => string.IsNullOrEmpty(ticketName) ? displayName : ticketName;
 }

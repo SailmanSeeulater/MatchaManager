@@ -33,6 +33,13 @@ public class Cup : MonoBehaviour
     public Func<Dictionary<DrinkNode, int>, bool> Recipient;
     // Fires when the player dumps a drink to start over (customers lose patience).
     public event Action Dumped;
+    // Coins spent: every portion poured costs the shop, even if the drink is dumped later.
+    public event Action<int> Spent;
+    [Tooltip("Set from the difficulty: multiplies ingredient costs")]
+    public float costMultiplier = 1;
+    int spentInCup;
+
+    public int CostOf(DrinkNode ingredient) => Mathf.RoundToInt(ingredient.cost * costMultiplier);
     // Fires whenever the contents change.
     public event Action Changed;
 
@@ -93,6 +100,9 @@ public class Cup : MonoBehaviour
                 break;
         }
         filledPixels += ingredient.cupPixels;
+        int cost = CostOf(ingredient);
+        spentInCup += cost;
+        Spent?.Invoke(cost);
         if (iceFront != null) iceFront.SetAsLastSibling();
 
         Refresh();
@@ -179,6 +189,7 @@ public class Cup : MonoBehaviour
         }
         layers.Clear();
         added.Clear();
+        spentInCup = 0;
         filledPixels = 0;
         Refresh();
     }
@@ -186,7 +197,7 @@ public class Cup : MonoBehaviour
     void Refresh()
     {
         serveButton.interactable = !IsEmpty && hasCustomer;
-        readout.text = Describe();
+        readout.text = Describe() + (spentInCup > 0 ? $"\n<color=#8a2e2c>COST ${spentInCup}</color>" : "");
         Changed?.Invoke();
     }
 

@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkRecipe
   displayName: Sunday Matcha
   lines:
-  - node: {fileID: 11400000, guid: ae5c7b2bc33894b87a5201fa15534276, type: 2}
+  - node: {fileID: 11400000, guid: 4b13b9e2effeb4cd895769529d9c314f, type: 2}
     portions: 1
-    label: 
+    label: Matcha
     optional: 0
   - node: {fileID: 11400000, guid: 37372eb9e5b294605ac33b3edfd4bba2, type: 2}
     portions: 1
@@ -32,3 +32,4 @@ MonoBehaviour:
     optional: 1
   price: 6
   patienceSeconds: 45
+  defaultsVersion: 1

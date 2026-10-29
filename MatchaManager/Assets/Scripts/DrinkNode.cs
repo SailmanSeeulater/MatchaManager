@@ -27,6 +27,11 @@ public class DrinkNode : ScriptableObject
     public int cupPixels = 6;
     [Tooltip("Liquid = smooth layer, Powder = grainy layer, Ice = cubes floating in the drink")]
     public CupLook look = CupLook.Auto;
+    [Tooltip("Coins one portion costs the shop (times the difficulty's Cost Multiplier)")]
+    public int cost = 1;
+    [Tooltip("1-3 stars. Customers whose palate is above this tip less. 0 = nobody cares (water, ice)")]
+    [Range(0, 3)] public int quality = 2;
+    [HideInInspector] public int economyVersion; // 0 = Build Scene fills in default cost and quality
 
     public bool IsIngredient => children.Count == 0;
     public string PortionLabel => $"{portion:0.##} {unit}".Trim();

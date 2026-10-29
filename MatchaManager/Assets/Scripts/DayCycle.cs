@@ -63,6 +63,7 @@ public class DayCycle : MonoBehaviour
         SaveSystem.Delete();
         LoadSave();
         UseDifficulty(difficulty);
+        customers.SetCoins(balance.startingCoins);
         BeginDay();
     }
 
@@ -72,6 +73,7 @@ public class DayCycle : MonoBehaviour
         Difficulty = Mathf.Clamp(difficulty, 0, difficulties.Length - 1);
         save.difficulty = Difficulty;
         balance = customers.balance = difficulties[Difficulty];
+        cup.costMultiplier = balance.costMultiplier;
         if (snacks != null)
         {
             snacks.balance = balance;
@@ -145,18 +147,19 @@ public class DayCycle : MonoBehaviour
         int goal = balance.Goal(Day);
         string verdict = t.happy >= goal ? "<color=#2e5222>GOAL REACHED!</color>"
             : t.happy >= goal / 2 ? "NOT BAD!" : "TOMORROW WILL BE BETTER";
+        int profit = t.earned - t.spent;
         summaryBody.text =
-            $"SERVED<pos=70%>{t.served}\n" +
             $"HAPPY<pos=70%>{t.happy} / {goal}\n" +
-            $"WRONG ORDERS<pos=70%>{t.wrong}\n" +
-            $"WALKED OUT<pos=70%>{t.walkedOut}\n" +
-            $"EARNED<pos=70%><color=#2e5222>+{t.earned}</color>\n" +
+            $"SERVED / LOST<pos=70%>{t.served} / {t.walkedOut + t.wrong}\n" +
+            $"SALES<pos=70%><color=#2e5222>+{t.earned}</color>\n" +
+            $"INGREDIENTS<pos=70%><color=#8a2e2c>-{t.spent}</color>\n" +
+            $"PROFIT<pos=70%><color=#{(profit >= 0 ? "2e5222" : "8a2e2c")}>{(profit >= 0 ? "+" : "")}{profit}</color>\n" +
             $"COINS<pos=70%>{customers.Coins}\n" +
             $"BEST DAY<pos=70%>{save.bestHappy} HAPPY{(newBest && Day > 1 ? " <color=#2e5222>NEW!</color>" : "")}\n" +
             verdict + $" <color=#8a7a5a>({balance.difficultyName})</color>";
         summary.SetActive(true);
         SoundFX.Play(Sfx.DayEnd);
-        Debug.Log($"[Day] Day {Day} done: served {t.served}, happy {t.happy}, wrong {t.wrong}, walked out {t.walkedOut}, earned {t.earned}");
+        Debug.Log($"[Day] Day {Day} done: served {t.served}, happy {t.happy}, wrong {t.wrong}, walked out {t.walkedOut}, earned {t.earned}, spent {t.spent}, profit {profit}");
     }
 
     // Steps in 10 minutes, like a shop clock: "9:00 AM", "12:30 PM", then "CLOSED".

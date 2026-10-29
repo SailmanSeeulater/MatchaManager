@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb8d9d955bb76466e910f4baa31428f6, type: 3}
+  m_Name: Balance Hard
+  m_EditorClassIdentifier: Assembly-CSharp::Balance
+  difficultyName: HARD
+  description: PICKY AND IN A HURRY
+  realSecondsPerDay: 300
+  openHour: 9
+  closeHour: 17
+  dailyGoal: 10
+  goalPerDay: 2
+  maxGoal: 30
+  arrivalInterval: {x: 11, y: 19}
+  patienceMultiplier: 1
+  hotSnackExtraPatience: 8
+  linePatienceRate: 0.5
+  orderSeconds: 2
+  snackChance: 0.5
+  changeChance: 0.7
+  changeChancePerDay: 0.05
+  maxChangeChance: 0.95
+  maxChanges: 4
+  addChance: 0.35
+  addMaxPixels: 4
+  doubleExtraChance: 0.3
+  unclearChance: 0.3
+  unclearChancePerDay: 0.03
+  maxUnclearChance: 0.6
+  wrongGuessPenalty: 0.1
+  guessBonus: 0.5
+  presetVersion: 2
+  startingCoins: 15
+  costMultiplier: 1.2
+  casualChance: 0.2
+  connoisseurChance: 0.35
+  connoisseurPerDay: 0.03
+  maxConnoisseur: 0.6
+  palateTip: {x: 0.5, y: 1, z: 1.5}
+  cheapTipPenalty: 0.5
+  dumpPenalty: 0.1
+  tipMultiplier: 0.8
+  harderPerDay: 0.06
+  hardestAt: 0.45
+  microwaveReady: 4
+  microwaveBurn: 7
+  ovenReady: 7
+  ovenBurn: 13

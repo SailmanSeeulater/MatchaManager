@@ -16,12 +16,20 @@ using Random = UnityEngine.Random;
 //   stays in the cup. Correct orders pay the price plus a patience tip.
 // - One ticket is "selected": its checklist is on the recipe panel. Click a
 //   ticket or use the arrow keys to switch.
+// - On Medium and Hard some customers mumble ("??? MATCHA"): name and changes stay
+//   hidden. Click their ticket (or G) to ask: 3 guess bubbles appear. A right guess
+//   reveals the order; a wrong one costs everyone waiting some patience. Making the
+//   right drink without asking earns a bonus.
+// - Ingredients and snacks cost coins as you use them. Each customer has a palate
+//   (1-3 stars); every ingredient below it shrinks the tip, and picky customers tip
+//   more when you meet their standard. Cheap is fine for casual customers.
 // DayCycle closes the door at the end of the day and resets the daily stats.
 public class CustomerManager : MonoBehaviour
 {
     public class DayStats
     {
         public int served, happy, wrong, walkedOut, earned;
+        public int spent;      // ingredients and snacks; profit = earned - spent
         public int turnedAway; // saw the line was full and kept walking
     }
 
@@ -37,6 +45,9 @@ public class CustomerManager : MonoBehaviour
         public int spot = -1;      // pickup spot while Waiting / Leaving
         public float timer;        // Ordering: time at the counter; Leaving: time left
         public float ticketTime;   // when they ordered (oldest gets served first)
+        public List<DrinkRecipe> guesses;              // unclear orders: the 3 names to pick from
+        public HashSet<int> wrongGuesses = new HashSet<int>();
+        public int palate = 2;   // 1 = anything goes, 3 = only the good stuff
     }
 
     [Serializable]
@@ -65,6 +76,13 @@ public class CustomerManager : MonoBehaviour
 
     [Header("Pickup")]
     public PickupSpot[] pickup;
+
+    [Header("Guessing unclear orders")]
+    public RectTransform guessPopup;
+    public Button[] guessButtons;
+    public TMP_Text[] guessLabels;
+    [Tooltip("Top of the guess bubbles, in shop pixels")]
+    public float guessTop = 58;
 
     [Header("Status bar")]
     public TMP_Text coinsText;
@@ -116,6 +134,7 @@ public class CustomerManager : MonoBehaviour
     public Patron Selected => selected >= 0 ? waiting[selected] : null;
     public Order CurrentOrder => Selected?.order;
     public float SelectedPatience => Selected?.patience ?? 0;
+    public bool Guessing => guessPopup != null && guessPopup.gameObject.activeSelf;
 
     void Awake() => waiting = new Patron[pickup.Length];
     void Start() => Init();
@@ -126,13 +145,20 @@ public class CustomerManager : MonoBehaviour
         if (waiting == null) waiting = new Patron[pickup.Length];
         cup.Recipient = TryServe;
         cup.Dumped += DumpPenalty;
+        cup.Spent += Spend;
+        if (snacks != null) snacks.Spent += Spend;
         cup.Changed += RefreshRecipe;
         if (snacks != null) snacks.Changed += RefreshRecipe;
         for (int i = 0; i < pickup.Length; i++)
         {
             int spot = i;
             pickup[i].patienceWidth = pickup[i].patienceFill.sizeDelta.x;
-            pickup[i].ticket.onClick.AddListener(() => Select(spot));
+            pickup[i].ticket.onClick.AddListener(() => ClickTicket(spot));
+        }
+        for (int i = 0; i < guessButtons.Length; i++)
+        {
+            int option = i;
+            guessButtons[i].onClick.AddListener(() => Guess(option));
         }
         if (recipes.Count == 0) Debug.LogWarning("[Customers] No recipes: run Matcha > Import Drink Tree, then rebuild.");
         StartDay();
@@ -153,6 +179,7 @@ public class CustomerManager : MonoBehaviour
         atCounter = null;
         for (int i = 0; i < waiting.Length; i++) waiting[i] = null;
         selected = -1;
+        CloseGuess();
         arrivalTimer = 1f;
         stepTimer = 0.5f;
         customer.alpha = orderUI.alpha = 0;
@@ -209,11 +236,58 @@ public class CustomerManager : MonoBehaviour
         RefreshLine();
     }
 
-    Patron NewPatron() => new Patron
+    Patron NewPatron()
     {
-        order = Order.Random(recipes[Random.Range(0, recipes.Count)], Menu, balance, day, Addable),
-        look = looks != null && looks.Length > 0 ? looks[Random.Range(0, looks.Length)] : null,
-    };
+        var p = new Patron
+        {
+            order = Order.Random(recipes[Random.Range(0, recipes.Count)], Menu, balance, day, Addable),
+            look = looks != null && looks.Length > 0 ? looks[Random.Range(0, looks.Length)] : null,
+        };
+        if (Random.value < balance.UnclearChance(day)) MakeUnclear(p);
+        p.palate = RandomPalate();
+        return p;
+    }
+
+    int RandomPalate()
+    {
+        float roll = Random.value;
+        return roll < balance.casualChance ? 1 : roll < balance.casualChance + balance.ConnoisseurChance(day) ? 3 : 2;
+    }
+
+    // Ingredients and snacks are paid for as they're used.
+    void Spend(int coins)
+    {
+        if (coins == 0) return;
+        Coins -= coins;
+        Today.spent += coins;
+        RefreshStatus();
+    }
+
+    // Different ingredients in the drink (with a quality) that are below this customer's palate.
+    public static int CheapCount(Dictionary<DrinkNode, int> drink, int palate) =>
+        drink.Keys.Count(n => n.quality > 0 && n.quality < palate);
+
+    static string Stars(int n) => $"<color=#b8860b>{new string('*', n)}</color>";
+
+    // Only part of the name: a word the drink shares with other drinks, so it really is unclear
+    // ("??? MATCHA" could be Sunday Matcha, Iced Matcha or Matcha Latte). Drinks with no shared
+    // word stay clear. Also picks the 3 names to guess from: the real one plus lookalikes.
+    public bool MakeUnclear(Patron p)
+    {
+        var recipe = p.order.recipe;
+        string[] Words(DrinkRecipe r) => r.displayName.ToUpper().Split(' ');
+        var words = Words(recipe);
+        var shared = words.Where(w => recipes.Any(r => r != recipe && Words(r).Contains(w))).ToList();
+        if (shared.Count == 0) return false;
+        var word = shared[Random.Range(0, shared.Count)];
+        p.order.unclear = true;
+        p.order.clue = string.Join(" ", words.Select(w => w == word ? w : "???")).Replace("??? ???", "???");
+        var lookalikes = recipes.Where(r => r != recipe && Words(r).Contains(word)).OrderBy(_ => Random.value);
+        var others = recipes.Where(r => r != recipe && !Words(r).Contains(word)).OrderBy(_ => Random.value);
+        p.guesses = new[] { recipe }.Concat(lookalikes).Concat(others).Take(3).OrderBy(_ => Random.value).ToList();
+        p.wrongGuesses.Clear();
+        return true;
+    }
 
     // How long this order's customer waits at pickup before giving up (hot snacks take a while).
     public float PatienceSeconds(Order order) =>
@@ -234,7 +308,7 @@ public class CustomerManager : MonoBehaviour
             atCounter.stage = Stage.Ordering;
             atCounter.timer = 0;
             ShowLook(customer.GetComponent<Image>(), atCounter.look);
-            orderText.text = OrderLines(atCounter.order);
+            orderText.text = OrderLines(atCounter.order) + "\n" + Stars(atCounter.palate);
             RefreshLine();
             RefreshRecipe();
             return;
@@ -268,10 +342,12 @@ public class CustomerManager : MonoBehaviour
     }
 
     // e.g. "SUNDAY MATCHA / NO MILK / + DANISH", requests colored; long lists are cut short
-    // (the recipe panel always has every change)
+    // (the recipe panel always has every change). Unclear orders only show the clue.
     static string OrderLines(Order order)
     {
         const int shown = 3;
+        if (order.unclear)
+            return order.clue + "\n<color=#8a7a5a>(MUMBLES)</color>" + (order.snack != null ? "\n+ " + order.snack.displayName.ToUpper() : "");
         var lines = new List<string> { order.recipe.displayName.ToUpper() };
         lines.AddRange(order.requests.Take(order.requests.Count > shown ? shown - 1 : shown)
             .Select(r => $"<color=#{(r.StartsWith("NO ") ? "8a2e2c" : "2e5222")}>{r}</color>"));
@@ -285,11 +361,12 @@ public class CustomerManager : MonoBehaviour
     int FreeSpot() => Array.IndexOf(waiting, null);
 
     // Puts someone straight at pickup with full patience (used by the headless checks).
-    public Patron Arrive(Order order)
+    public Patron Arrive(Order order, bool unclear = false, int palate = 2)
     {
         int spot = FreeSpot();
         if (spot < 0) return null;
-        var p = new Patron { order = order, look = looks != null && looks.Length > 0 ? looks[0] : null };
+        var p = new Patron { order = order, palate = palate, look = looks != null && looks.Length > 0 ? looks[0] : null };
+        if (unclear) MakeUnclear(p);
         TakeOrder(p, spot);
         return p;
     }
@@ -300,13 +377,9 @@ public class CustomerManager : MonoBehaviour
         p.spot = spot;
         p.ticketTime = clock;
         waiting[spot] = p;
-        var s = pickup[spot];
-        ShowLook(s.view, p.look);
-        // the ticket only has room for the name, then "!" (changes to check on the recipe panel) and the snack
-        var extras = (p.order.requests.Count > 0 ? "<color=#8a2e2c>!</color> " : "") +
-                     (p.order.snack != null ? "<color=#2e5222>+" + p.order.snack.TicketName.ToUpper() + "</color>" : "");
-        s.ticketText.text = p.order.recipe.displayName.ToUpper() + (extras.Length > 0 ? "\n" + extras : "");
-        s.group.alpha = 1;
+        ShowLook(pickup[spot].view, p.look);
+        RefreshTicketText(p);
+        pickup[spot].group.alpha = 1;
         SoundFX.Play(Sfx.Order);
         if (Selected == null || Selected.stage != Stage.Waiting)
         {
@@ -314,6 +387,16 @@ public class CustomerManager : MonoBehaviour
             recipePanel.ShowTab(RecipePanel.Tab.Recipe);
         }
         RefreshAll();
+    }
+
+    // The ticket only has room for the name, then "!" (changes to check on the recipe panel)
+    // and the snack. Unclear orders show the clue and "? ASK G".
+    void RefreshTicketText(Patron p)
+    {
+        string extras = p.order.unclear ? "<color=#8a2e2c>? ASK G</color>"
+            : (p.order.requests.Count > 0 ? "<color=#8a2e2c>!</color> " : "") +
+              (p.order.snack != null ? "<color=#2e5222>+" + p.order.snack.TicketName.ToUpper() + "</color>" : "");
+        pickup[p.spot].ticketText.text = p.order.ShownName + (extras.Length > 0 ? "\n" + extras : "");
     }
 
     void TickPickup(float dt)
@@ -374,11 +457,22 @@ public class CustomerManager : MonoBehaviour
             SoundFX.Play(Sfx.ServeBad);
             return true;
         }
-        int paid = p.order.Price + Mathf.RoundToInt(p.order.Price * p.patience * balance.tipMultiplier);
+        // the tip depends on patience and palate; each ingredient below their palate takes a share of it
+        int cheap = CheapCount(drink, p.palate);
+        float palateTip = p.palate >= 3 ? balance.palateTip.z : p.palate == 2 ? balance.palateTip.y : balance.palateTip.x;
+        float quality = Mathf.Max(0, 1 - balance.cheapTipPenalty * cheap);
+        int paid = p.order.Price + Mathf.RoundToInt(p.order.Price * p.patience * balance.tipMultiplier * palateTip * quality);
+        // made an unclear order right without asking
+        bool guessed = p.order.unclear;
+        if (guessed) paid += Mathf.RoundToInt(p.order.Price * balance.guessBonus);
         Coins += paid;
         Today.happy++;
         Today.earned += paid;
-        React(p, $"{(p.patience > 0.6f ? "PERFECT!" : "FINALLY...")}\n<color=#2e5222>+{paid}</color>", "1e1a2b");
+        string cheer = guessed ? "GOOD GUESS!"
+            : cheap > 0 ? (p.palate >= 3 ? "HMM. CHEAP." : "TASTES CHEAP...")
+            : p.palate >= 3 && p.patience > 0.6f ? "EXQUISITE!"
+            : p.patience > 0.6f ? "PERFECT!" : "FINALLY...";
+        React(p, $"{cheer}\n<color=#2e5222>+{paid}</color>", "1e1a2b");
         SoundFX.Play(Sfx.ServeGood);
         return true;
     }
@@ -389,7 +483,11 @@ public class CustomerManager : MonoBehaviour
         p.timer = reactTime + fadeTime;
         LastReaction = message;
         pickup[p.spot].ticketText.text = $"<color=#{color}>{message}</color>";
-        if (selected == p.spot) SelectOldest();
+        if (selected == p.spot)
+        {
+            CloseGuess();
+            SelectOldest();
+        }
         RefreshAll();
     }
 
@@ -398,10 +496,68 @@ public class CustomerManager : MonoBehaviour
     public void Select(int spot)
     {
         if (spot < 0 || spot >= waiting.Length || waiting[spot] == null || waiting[spot].stage != Stage.Waiting) return;
+        if (spot != selected) CloseGuess();
         selected = spot;
         recipePanel.ShowTab(RecipePanel.Tab.Recipe);
         RefreshTickets();
         RefreshRecipe();
+    }
+
+    // Clicking a ticket selects it; clicking an unclear one also asks what they meant.
+    public void ClickTicket(int spot)
+    {
+        Select(spot);
+        if (selected == spot && Selected.order.unclear) OpenGuess();
+    }
+
+    // ---- guessing ----------------------------------------------------------
+
+    // G or clicking an unclear ticket: show the 3 names over that customer.
+    public void OpenGuess()
+    {
+        var p = Selected;
+        if (p == null || p.stage != Stage.Waiting || !p.order.unclear || guessPopup == null) return;
+        float center = pickup[p.spot].view.rectTransform.anchoredPosition.x;
+        guessPopup.anchoredPosition = new Vector2(Mathf.Clamp(Mathf.Round(center - guessPopup.sizeDelta.x / 2), 4, 297 - guessPopup.sizeDelta.x), -guessTop);
+        for (int i = 0; i < guessButtons.Length; i++)
+        {
+            bool wrong = p.wrongGuesses.Contains(i);
+            string name = i < p.guesses.Count ? p.guesses[i].displayName.ToUpper() : "";
+            guessLabels[i].text = wrong ? $"<color=#8a7a5a><s>{name}</s></color>" : name;
+            guessButtons[i].interactable = !wrong && i < p.guesses.Count;
+        }
+        guessPopup.gameObject.SetActive(true);
+    }
+
+    public void CloseGuess()
+    {
+        if (guessPopup != null) guessPopup.gameObject.SetActive(false);
+    }
+
+    // Right: the order is revealed. Wrong: crossed out, and everyone waiting loses patience.
+    public void Guess(int option)
+    {
+        var p = Selected;
+        if (!Guessing || p == null || !p.order.unclear || option >= p.guesses.Count || p.wrongGuesses.Contains(option)) return;
+        if (p.guesses[option] == p.order.recipe)
+        {
+            p.order.unclear = false;
+            LastReaction = "THAT'S IT!";
+            SoundFX.Play(Sfx.Order);
+            CloseGuess();
+            RefreshTicketText(p);
+            RefreshAll();
+            return;
+        }
+        p.wrongGuesses.Add(option);
+        LastReaction = "NO...";
+        SoundFX.Play(Sfx.ServeBad);
+        float penalty = balance.wrongGuessPenalty;
+        foreach (var w in WaitingPatrons) w.patience -= penalty;
+        foreach (var l in line) l.patience -= penalty;
+        Debug.Log($"[Customers] Wrong guess: everyone waiting lost {penalty:P0} patience");
+        OpenGuess(); // redraw with the crossed-out name
+        RefreshAll();
     }
 
     // Arrow keys: step to the next waiting ticket left (-1) or right (+1).
@@ -497,6 +653,13 @@ public class CustomerManager : MonoBehaviour
             return;
         }
         var order = p.order;
+        string others = WaitingCount > 1 ? $" <color=#8a7a5a>{WaitingPatrons.Count(w => w.spot < p.spot) + 1}/{WaitingCount}</color>" : "";
+        if (order.unclear)
+        {
+            recipePanel.SetOrder($"#{p.spot + 1} {order.clue} {Stars(p.palate)}{others}",
+                "THEY MUMBLED THE NAME.\nCLICK THEIR TICKET OR PRESS G\nTO ASK WHICH DRINK IT IS,\nOR MAKE YOUR BEST GUESS\n<color=#2e5222>(RIGHT GUESS = BONUS)</color>", 5);
+            return;
+        }
         var result = order.Check(cup.Counts());
         var rows = new List<string>();
         for (int i = 0; i < order.lines.Count; i++)
@@ -504,14 +667,16 @@ public class CustomerManager : MonoBehaviour
             var line = order.lines[i];
             if (line.removed) { rows.Add($"[-] <s>{line.Name}</s> NONE"); continue; }
             string count = result.have[i] > 0 && !result.lineOk[i] ? $" ({result.have[i]}/{line.portions})" : "";
-            rows.Add($"[{(result.lineOk[i] ? "x" : " ")}] {line.Name} {line.Amount}{count}");
+            // ingredients in the cup for this line that are below the customer's palate
+            bool cheapHere = line.node.Ingredients().Any(n => cup.Counts().ContainsKey(n) && n.quality > 0 && n.quality < p.palate);
+            rows.Add($"[{(result.lineOk[i] ? "x" : " ")}] {line.Name} {line.Amount}{count}" +
+                     (cheapHere ? " <color=#8a2e2c>(CHEAP)</color>" : ""));
         }
         if (order.snack != null) rows.Add(SnackRow(order));
         if (result.extras.Count > 0)
             rows.Add("<color=#8a2e2c>[!] NOT ORDERED: " +
                      string.Join(", ", result.extras.Select(n => n.displayName.ToUpper())) + "</color>");
-        string others = WaitingCount > 1 ? $" <color=#8a7a5a>{WaitingPatrons.Count(w => w.spot < p.spot) + 1}/{WaitingCount}</color>" : "";
-        recipePanel.SetOrder($"#{p.spot + 1} {order.recipe.displayName.ToUpper()}{others}", string.Join("\n", rows), rows.Count);
+        recipePanel.SetOrder($"#{p.spot + 1} {order.recipe.displayName.ToUpper()} {Stars(p.palate)}{others}", string.Join("\n", rows), rows.Count);
     }
 
     IList<Snack> Menu => snacks != null ? snacks.Menu : new Snack[0];

@@ -56,6 +56,37 @@ public class Balance : ScriptableObject
     [Tooltip("How often an EXTRA is a double (x2)")]
     [Range(0, 1)] public float doubleExtraChance = 0.1f;
 
+    [Header("Unclear orders")]
+    [Tooltip("Chance a customer only says part of the drink's name (\"??? MATCHA\") on day 1. 0 = never")]
+    [Range(0, 1)] public float unclearChance = 0;
+    [Tooltip("...growing by this each day...")]
+    public float unclearChancePerDay = 0;
+    [Tooltip("...up to this")]
+    [Range(0, 1)] public float maxUnclearChance = 0;
+    [Tooltip("A wrong guess takes this much patience from everyone waiting (0.1 = 10%)")]
+    public float wrongGuessPenalty = 0.1f;
+    [Tooltip("Making an unclear order right without asking adds this much of the price as a bonus")]
+    public float guessBonus = 0.5f;
+    [HideInInspector] public int presetVersion; // lets Build Scene add new preset settings to older assets
+
+    [Header("Costs and palates")]
+    [Tooltip("Coins a new game starts with, to pay for the first ingredients")]
+    public int startingCoins = 20;
+    [Tooltip("Multiplies every ingredient and snack cost")]
+    public float costMultiplier = 1;
+    [Tooltip("Share of customers who don't care about quality (1 star palate)")]
+    [Range(0, 1)] public float casualChance = 0.35f;
+    [Tooltip("Share of picky customers (3 star palate) on day 1...")]
+    [Range(0, 1)] public float connoisseurChance = 0.2f;
+    [Tooltip("...growing by this each day...")]
+    public float connoisseurPerDay = 0.02f;
+    [Tooltip("...up to this. Everyone else has a 2 star palate")]
+    [Range(0, 1)] public float maxConnoisseur = 0.4f;
+    [Tooltip("Tip size by palate (1, 2, 3 stars): picky customers tip more when you meet their standard")]
+    public Vector3 palateTip = new Vector3(0.5f, 1f, 1.5f);
+    [Tooltip("Each ingredient below the customer's palate takes this share of the tip")]
+    [Range(0, 1)] public float cheapTipPenalty = 0.5f;
+
     [Header("Mistakes")]
     [Tooltip("Dumping the cup takes this much patience from every waiting customer (0.1 = 10%)")]
     public float dumpPenalty = 0.1f;
@@ -75,6 +106,11 @@ public class Balance : ScriptableObject
     public float microwaveBurn = 8;
     public float ovenReady = 7;
     public float ovenBurn = 16;
+
+    public float ConnoisseurChance(int day) => Mathf.Min(maxConnoisseur, connoisseurChance + connoisseurPerDay * (day - 1));
+
+    public float UnclearChance(int day) =>
+        unclearChance <= 0 ? 0 : Mathf.Min(maxUnclearChance, unclearChance + unclearChancePerDay * (day - 1));
 
     public float ChangeChance(int day) => Mathf.Min(maxChangeChance, changeChance + changeChancePerDay * (day - 1));
 

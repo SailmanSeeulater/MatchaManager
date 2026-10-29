@@ -64,15 +64,40 @@ public static class DrinkTreeImporter
     {
         var milk = ("Dairy", 1, "Milk", true);
         var sweetener = ("Sweeteners", 1, "Sweetener", true);
-        Recipe("Sunday Matcha", 6, 45, ("Ceremonial Matcha", 1, null, false), ("Water", 1, null, false), milk, sweetener);
+        // matcha lines take either grade, so Ceremonial vs Low-Grade is a cost/quality choice
+        var matcha = ("Matcha", 1, "Matcha", false);
+        Recipe("Sunday Matcha", 6, 45, matcha, ("Water", 1, null, false), milk, sweetener);
         Recipe("Hojicha Latte", 5, 45, ("Hojicha", 1, null, false), ("Water", 1, null, false), ("Dairy", 1, "Milk", false), sweetener);
-        Recipe("Iced Matcha", 5, 40, ("Ceremonial Matcha", 1, null, false), ("Water", 1, null, false), ("Ice", 1, null, false), sweetener);
+        Recipe("Iced Matcha", 5, 40, matcha, ("Water", 1, null, false), ("Ice", 1, null, false), sweetener);
         Recipe("Mocha", 6, 50, ("Coffee", 1, "Coffee", false), ("Chocolate", 1, "Chocolate", false), ("Dairy", 1, "Milk", false));
-        Recipe("Matcha Latte", 5, 40, ("Ceremonial Matcha", 1, null, false), ("Dairy", 1, "Milk", false), sweetener);
+        Recipe("Matcha Latte", 5, 40, matcha, ("Dairy", 1, "Milk", false), sweetener);
+        MigrateRecipes();
         Recipe("London Fog", 6, 45, ("Earl Gray", 1, null, false), ("Water", 1, null, false), ("Dairy", 1, "Milk", false), ("Vanilla", 1, "Vanilla", true));
         Recipe("Jasmine Milk Tea", 5, 40, ("Jasmine", 1, null, false), ("Water", 1, null, false), milk, sweetener);
         Recipe("Iced Coffee", 5, 35, ("Coffee", 1, "Coffee", false), ("Ice", 1, null, false), ("Water", 1, null, false), milk, sweetener);
         Recipe("Hot Chocolate", 5, 40, ("Chocolate", 2, "Chocolate", false), ("Dairy", 1, "Milk", false), sweetener);
+    }
+
+    // Starter recipes made before cost to operate asked for Ceremonial Matcha exactly; they now take
+    // any matcha (the choice of grade is the point). Runs once per recipe; Build Scene calls it too.
+    public static void MigrateRecipes()
+    {
+        var matchaFolder = AssetDatabase.LoadAssetAtPath<DrinkNode>($"{OutDir}/Matcha.asset");
+        if (matchaFolder == null || !AssetDatabase.IsValidFolder(RecipeDir)) return;
+        foreach (var guid in AssetDatabase.FindAssets("t:DrinkRecipe", new[] { RecipeDir }))
+        {
+            var recipe = AssetDatabase.LoadAssetAtPath<DrinkRecipe>(AssetDatabase.GUIDToAssetPath(guid));
+            if (recipe.defaultsVersion >= 1) continue;
+            foreach (var line in recipe.lines)
+                if (line.node != null && line.node.displayName == "Ceremonial Matcha")
+                {
+                    line.node = matchaFolder;
+                    line.label = "Matcha";
+                }
+            recipe.defaultsVersion = 1;
+            EditorUtility.SetDirty(recipe);
+        }
+        AssetDatabase.SaveAssets();
     }
 
     static void Recipe(string name, int price, float patience, params (string node, int portions, string label, bool optional)[] lines)
@@ -83,6 +108,7 @@ public static class DrinkTreeImporter
         recipe.displayName = name;
         recipe.price = price;
         recipe.patienceSeconds = patience;
+        recipe.defaultsVersion = 1;
         foreach (var l in lines)
         {
             var node = AssetDatabase.LoadAssetAtPath<DrinkNode>($"{OutDir}/{l.node}.asset");

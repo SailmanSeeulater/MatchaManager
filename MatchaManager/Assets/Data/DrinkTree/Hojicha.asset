@@ -20,3 +20,6 @@ MonoBehaviour:
   cupColor: {r: 0.5411765, g: 0.32941177, b: 0.19607843, a: 1}
   cupPixels: 8
   look: 1
+  cost: 2
+  quality: 2
+  economyVersion: 1

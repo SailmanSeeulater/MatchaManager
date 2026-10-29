@@ -36,6 +36,11 @@ public class Order
     }
 
     public readonly DrinkRecipe recipe;
+    // Unclear: the customer only said part of the name (clue, e.g. "??? MATCHA"). Until the player
+    // asks and guesses right, the name and the changes stay hidden.
+    public bool unclear;
+    public string clue;
+    public string ShownName => unclear ? clue : recipe.displayName.ToUpper();
     public readonly Snack snack; // null = drink only
     public readonly List<Line> lines;
     public readonly List<string> requests = new List<string>(); // shown in the bubble

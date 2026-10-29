@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fb8d9d955bb76466e910f4baa31428f6, type: 3}
   m_Name: Balance
   m_EditorClassIdentifier: Assembly-CSharp::Balance
+  difficultyName: MEDIUM
+  description: THE REAL CAFE
   realSecondsPerDay: 300
   openHour: 9
   closeHour: 17
@@ -25,7 +27,27 @@ MonoBehaviour:
   orderSeconds: 2
   snackChance: 0.4
   changeChance: 0.6
-  secondChangeChance: 0.3
+  changeChancePerDay: 0.04
+  maxChangeChance: 0.8
+  maxChanges: 2
+  addChance: 0.2
+  addMaxPixels: 4
+  doubleExtraChance: 0.1
+  unclearChance: 0.15
+  unclearChancePerDay: 0.02
+  maxUnclearChance: 0.35
+  wrongGuessPenalty: 0.1
+  guessBonus: 0.5
+  presetVersion: 2
+  startingCoins: 20
+  costMultiplier: 1
+  casualChance: 0.35
+  connoisseurChance: 0.2
+  connoisseurPerDay: 0.02
+  maxConnoisseur: 0.4
+  palateTip: {x: 0.5, y: 1, z: 1.5}
+  cheapTipPenalty: 0.5
+  dumpPenalty: 0.1
   tipMultiplier: 1
   harderPerDay: 0.07
   hardestAt: 0.4

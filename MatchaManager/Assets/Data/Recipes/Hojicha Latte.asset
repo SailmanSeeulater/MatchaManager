@@ -32,3 +32,4 @@ MonoBehaviour:
     optional: 1
   price: 5
   patienceSeconds: 45
+  defaultsVersion: 1

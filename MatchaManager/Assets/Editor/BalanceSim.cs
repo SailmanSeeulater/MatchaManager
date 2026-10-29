@@ -19,6 +19,9 @@ using UnityEngine;
 // if needed, and serves. Customers who leave mid-drink waste the bot's work.
 public static class BalanceSim
 {
+    // How bots pick between cheap and premium ingredients for "any" lines.
+    public enum Shopping { Smart, Cheapest, Premium }
+
     class Profile
     {
         public string name;
@@ -70,6 +73,17 @@ public static class BalanceSim
                 report.AppendLine();
             }
         }
+        // does matching palates pay? same regular bot, three ways of choosing ingredients (Medium)
+        report.AppendLine("PROFIT by ingredient choice (REGULAR bot, MEDIUM): profit/happy at days 1, 5, 10");
+        foreach (Shopping shopping in System.Enum.GetValues(typeof(Shopping)))
+        {
+            var days = Enumerable.Range(0, Days).Select(_ => new List<CustomerManager.DayStats>()).ToArray();
+            for (int seed = 1; seed <= Seeds; seed++) SimulateWeek(Profiles[1], seed, days, 1, shopping);
+            report.Append($"  {shopping,-9}");
+            foreach (int d in new[] { 0, 4, 9 })
+                report.Append($" {days[d].Average(x => x.earned - x.spent),5:0}/{days[d].Average(x => x.happy),4:0.0}  ");
+            report.AppendLine();
+        }
         Debug.Log(report.ToString());
     }
 
@@ -84,7 +98,8 @@ public static class BalanceSim
             .Average(i => Order.Random(recipes[i % recipes.Count], new Snack[0], balance, day, addable).requests.Count);
     }
 
-    static void SimulateWeek(Profile profile, int seed, List<CustomerManager.DayStats>[] days, int difficulty)
+    static void SimulateWeek(Profile profile, int seed, List<CustomerManager.DayStats>[] days, int difficulty,
+        Shopping shopping = Shopping.Smart)
     {
         EditorSceneManager.OpenScene(ScenePath);
         Object.FindAnyObjectByType<TitleScreen>().gameObject.SetActive(false);
@@ -105,7 +120,7 @@ public static class BalanceSim
 
         for (int d = 0; d < Days; d++)
         {
-            var bot = new Bot(profile, customers, snacks, depth);
+            var bot = new Bot(profile, customers, snacks, depth) { shopping = shopping };
             float t = 0;
             while (!day.Ended && t < 1200)
             {
@@ -125,6 +140,7 @@ public static class BalanceSim
     class Bot
     {
         readonly Profile profile;
+        public Shopping shopping;
         readonly CustomerManager customers;
         readonly SnackStation snacks;
         readonly Cup cup;
@@ -163,8 +179,22 @@ public static class BalanceSim
             target = waiting.Where(p => SecondsLeft(p) > Estimate(p.order) + 1).OrderBy(p => p.ticketTime).FirstOrDefault()
                      ?? waiting.OrderByDescending(SecondsLeft).First();
             var order = target.order;
+            float asking = 0;
+            if (order.unclear)
+            {
+                // ask: try the names in random order until the right one (wrong ones cost everyone patience)
+                customers.Select(target.spot);
+                customers.OpenGuess();
+                foreach (int i in Enumerable.Range(0, target.guesses.Count).OrderBy(_ => Random.value))
+                {
+                    asking += profile.click;
+                    customers.Guess(i);
+                    if (!order.unclear) break;
+                }
+                customers.CloseGuess();
+            }
             float clicks = Clicks(order);
-            float time = profile.think + clicks * profile.click;
+            float time = profile.think + clicks * profile.click + asking;
             if (Random.value < profile.mistake)
             {
                 // a mistake means dumping and redoing part of the drink
@@ -195,6 +225,20 @@ public static class BalanceSim
             profile.think + Clicks(order) * profile.click +
             (order.snack == null ? 0 : order.snack.needsHeating ? Mathf.Max(3 * profile.click, snacks.appliances[0].readySeconds) : profile.click);
 
+        // Smart: the cheapest ingredient good enough for this customer; Cheapest / Premium ignore the palate.
+        DrinkNode Choose(DrinkNode node, int palate)
+        {
+            var options = node.Ingredients().ToList();
+            switch (shopping)
+            {
+                case Shopping.Cheapest: return options.OrderBy(n => n.cost).ThenByDescending(n => n.quality).First();
+                case Shopping.Premium: return options.OrderByDescending(n => n.quality).ThenBy(n => n.cost).First();
+                default:
+                    return options.Where(n => n.quality == 0 || n.quality >= palate).OrderBy(n => n.cost).FirstOrDefault()
+                           ?? options.OrderByDescending(n => n.quality).First();
+            }
+        }
+
         void Finish()
         {
             var order = target.order;
@@ -207,7 +251,10 @@ public static class BalanceSim
             else if (order.snack != null)
                 snacks.ClickSlot(System.Array.FindIndex(snacks.slots, s => s.snack == order.snack));
             foreach (var line in order.lines.Where(l => !l.removed))
-                for (int i = 0; i < line.portions; i++) cup.Add(line.node.Ingredients().First());
+            {
+                var pick = Choose(line.node, target.palate);
+                for (int i = 0; i < line.portions; i++) cup.Add(pick);
+            }
             cup.Serve();
             if (!cup.IsEmpty) cup.Clear();
             target = null;
