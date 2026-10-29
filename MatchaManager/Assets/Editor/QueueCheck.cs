@@ -14,6 +14,7 @@ public static class QueueCheck
     public static void Run()
     {
         EditorSceneManager.OpenScene("Assets/Scenes/Main.unity");
+        Object.FindAnyObjectByType<TitleScreen>().gameObject.SetActive(false); // straight to the shop
         customers = Object.FindAnyObjectByType<CustomerManager>();
         browser = Object.FindAnyObjectByType<DrinkBrowser>();
         cup = customers.cup;

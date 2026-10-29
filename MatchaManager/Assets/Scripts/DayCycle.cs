@@ -8,11 +8,15 @@ using UnityEngine.UI;
 // with a clean station and slightly busier, less patient customers.
 // Progress is saved at the start and end of every day: quitting mid-day
 // replays that day from its start; quitting at the summary resumes the next day.
+// Nothing runs until StartGame (called by the title screen, or right away if
+// the scene has none).
 public class DayCycle : MonoBehaviour
 {
     public CustomerManager customers;
     public Cup cup;
     public SnackStation snacks;
+    [Tooltip("Optional: if set, the day waits for CONTINUE / NEW GAME")]
+    public TitleScreen title;
 
     [Header("Status bar")]
     public TMP_Text dayText;
@@ -40,6 +44,7 @@ public class DayCycle : MonoBehaviour
 
     public int Day { get; private set; } = 1;
     public bool Ended { get; private set; }
+    public bool Running { get; private set; }
     public bool IsOpen => minutes < OpenMinutes;
 
     float minutes; // game minutes since opening
@@ -49,6 +54,13 @@ public class DayCycle : MonoBehaviour
     void Start()
     {
         nextDayButton.onClick.AddListener(NextDay);
+        customers.open = false; // nobody comes in behind the title screen
+        if (title == null) StartGame();
+    }
+
+    // Loads the save (if any) and opens the shop.
+    public void StartGame()
+    {
         LoadSave();
         BeginDay();
     }
@@ -65,7 +77,7 @@ public class DayCycle : MonoBehaviour
 
     public void Tick(float dt)
     {
-        if (Ended) return;
+        if (!Running || Ended) return;
         minutes = Mathf.Min(minutes + dt * OpenMinutes / realSecondsPerDay, OpenMinutes);
         customers.open = IsOpen;
         RefreshClock();
@@ -82,6 +94,7 @@ public class DayCycle : MonoBehaviour
     {
         minutes = 0;
         Ended = false;
+        Running = true;
         summary.SetActive(false);
         // later days: less patience and more customers
         float hardness = Mathf.Max(minPatience, 1 - patienceDropPerDay * (Day - 1));

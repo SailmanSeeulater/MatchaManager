@@ -278,17 +278,8 @@ public static class MatchaSceneBuilder
         var summaryTitle = AddText(summary, "Title", 152, 66, 176, 14, "DAY 1 DONE", 10, MatchaDark, TextAlignmentOptions.Center);
         var summaryBody = AddText(summary, "Body", 170, 84, 140, 72, "", 6, Ink, TextAlignmentOptions.TopLeft);
         summaryBody.lineSpacing = 20;
-        AddRect(summary, "ButtonBorder", 189, 163, 102, 22, Ink);
-        var nextDay = AddRect(summary, "NextDayButton", 190, 164, 100, 20, Hex("6fa04a"));
-        nextDay.GetComponent<Image>().raycastTarget = true;
-        var nextDayButton = nextDay.gameObject.AddComponent<Button>();
-        var nextColors = nextDayButton.colors;
-        nextColors.highlightedColor = new Color(0.92f, 0.92f, 0.92f);
-        nextColors.pressedColor = new Color(0.78f, 0.78f, 0.78f);
-        nextColors.fadeDuration = 0.05f;
-        nextDayButton.colors = nextColors;
-        nextDayButton.navigation = new Navigation { mode = Navigation.Mode.None };
-        AddText(nextDay, "Label", 0, 0, 100, 20, "NEXT DAY", 8, Cream, TextAlignmentOptions.Center);
+        var nextDayButton = AddRectButton(summary, "NextDayButton", 190, 164, 100, 20, Hex("6fa04a"));
+        AddText((RectTransform)nextDayButton.transform, "Label", 0, 0, 100, 20, "NEXT DAY", 8, Cream, TextAlignmentOptions.Center);
         summary.gameObject.SetActive(false);
 
         var day = screen.gameObject.AddComponent<DayCycle>();
@@ -301,6 +292,24 @@ public static class MatchaSceneBuilder
         day.summaryTitle = summaryTitle;
         day.summaryBody = summaryBody;
         day.nextDayButton = nextDayButton;
+
+        // --- Title screen (topmost; the day waits until CONTINUE or NEW GAME) ---
+        var titleRoot = AddRect(screen, "TitleScreen", 0, 0, RefWidth, RefHeight, new Color(0.06f, 0.05f, 0.1f, 0.75f));
+        titleRoot.GetComponent<Image>().raycastTarget = true;
+        AddImage(titleRoot, "Title_Card");
+        var continueButton = AddRectButton(titleRoot, "ContinueButton", 170, 150, 140, 28, Hex("6fa04a"));
+        var continueRt = (RectTransform)continueButton.transform;
+        AddText(continueRt, "Label", 0, 3, 140, 13, "CONTINUE", 9, Cream, TextAlignmentOptions.Center);
+        var continueInfo = AddText(continueRt, "Info", 0, 16, 140, 9, "DAY 1  -  0 COINS", 5, Cream, TextAlignmentOptions.Center);
+        var newGameButton = AddRectButton(titleRoot, "NewGameButton", 170, 186, 140, 20, Hex("e0d2b2"));
+        var newGameLabel = AddText((RectTransform)newGameButton.transform, "Label", 0, 0, 140, 20, "NEW GAME", 8, Ink, TextAlignmentOptions.Center);
+        var title = titleRoot.gameObject.AddComponent<TitleScreen>();
+        title.day = day;
+        title.continueButton = continueButton;
+        title.continueInfo = continueInfo;
+        title.newGameButton = newGameButton;
+        title.newGameLabel = newGameLabel;
+        day.title = title;
         var preview = AddImage(screen, "Text_Preview");
         preview.gameObject.SetActive(false); // reference only: real text is TextMeshPro
 
@@ -386,6 +395,23 @@ public static class MatchaSceneBuilder
         rt.pivot = new Vector2(0.5f, 0);
         rt.anchoredPosition = new Vector2(x, -144);
         return rt;
+    }
+
+    // Solid-color button with a 1px ink border, for screens that have no button art.
+    static Button AddRectButton(RectTransform parent, string name, float x, float y, float w, float h, Color color)
+    {
+        AddRect(parent, name + "Border", x - 1, y - 1, w + 2, h + 2, Ink);
+        var rt = AddRect(parent, name, x, y, w, h, color);
+        rt.GetComponent<Image>().raycastTarget = true;
+        var btn = rt.gameObject.AddComponent<Button>();
+        var colors = btn.colors;
+        colors.highlightedColor = new Color(0.92f, 0.92f, 0.92f);
+        colors.pressedColor = new Color(0.78f, 0.78f, 0.78f);
+        colors.disabledColor = new Color(0.7f, 0.72f, 0.74f, 0.55f);
+        colors.fadeDuration = 0.05f;
+        btn.colors = colors;
+        btn.navigation = new Navigation { mode = Navigation.Mode.None };
+        return btn;
     }
 
     // Plain colored rectangle (no sprite), in its parent's top-left pixel coords.

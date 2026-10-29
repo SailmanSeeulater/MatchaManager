@@ -425,6 +425,26 @@ layer("Text_Preview", function()
   text(372, 262, "SERVED", P.cream)
 end)
 
+-- title screen card (hidden here; Unity shows it over the dimmed shop at startup)
+layer("Title_Card", function()
+  rbox(120, 34, 240, 190, P.cream, P.ink, 4)
+  rfill(125, 39, 230, 4, P.m, 1)
+  -- matcha bowl with steam
+  local cx, cy = 240, 66
+  for dy = 0, 15 do for dx = -16, 16 do if dx*dx + dy*dy <= 256 then px(cx + dx, cy + dy, P.ink) end end end
+  for dy = 0, 14 do for dx = -15, 15 do
+    if dx*dx + dy*dy <= 225 then px(cx + dx, cy + dy, dx > 6 and P.terraDk or P.terracotta) end
+  end end
+  fill(cx - 7, cy + 16, 15, 2, P.ink)
+  ellipse(cx, cy, 16, 4, P.ink); ellipse(cx, cy, 15, 3, P.m); ellipse(cx - 4, cy - 1, 6, 1, P.mLt)
+  for k = -1, 1 do for j = 0, 9 do px(cx + k * 7 + (((j // 3) % 2 == 0) and 0 or 1), cy - 7 - j, P.grayLt) end end
+  -- name
+  local w = textWidth("MATCHA", 5)
+  text(240 - w // 2 + 2, 96, "MATCHA", P.mDk2, 5)
+  text(240 - w // 2, 94, "MATCHA", P.m, 5)
+  ctext(120, 126, 240, "MANAGER", P.mDk2, 3)
+end).isVisible = false
+
 layer("Frame", function()
   box(1, 1, 299, 165, P.frame)
   box(301, 1, 178, 165, P.frame)

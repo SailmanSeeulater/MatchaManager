@@ -387,8 +387,17 @@
     "duration": 100
    },
    {
+    "filename": "Title_Card",
+    "frame": { "x": 0, "y": 2415, "w": 240, "h": 190 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 120, "y": 34, "w": 240, "h": 190 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 100
+   },
+   {
     "filename": "Frame",
-    "frame": { "x": 0, "y": 2415, "w": 478, "h": 257 },
+    "frame": { "x": 0, "y": 2605, "w": 478, "h": 257 },
     "rotated": false,
     "trimmed": true,
     "spriteSourceSize": { "x": 1, "y": 1, "w": 478, "h": 257 },
@@ -400,7 +409,7 @@
   "app": "https://www.aseprite.org/",
   "version": "1.3.18.6-arm64",
   "format": "RGBA8888",
-  "size": { "w": 480, "h": 2672 },
+  "size": { "w": 480, "h": 2862 },
   "scale": "1"
  }
 }

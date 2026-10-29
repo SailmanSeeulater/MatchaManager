@@ -21,6 +21,8 @@ public static class SaveSystem
 
     public static string FilePath => PathOverride ?? Path.Combine(Application.persistentDataPath, "save.json");
 
+    public static bool Exists => File.Exists(FilePath);
+
     public static SaveData Load()
     {
         if (!File.Exists(FilePath)) return new SaveData();

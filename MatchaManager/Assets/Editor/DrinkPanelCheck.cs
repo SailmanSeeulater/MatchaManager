@@ -13,6 +13,7 @@ public static class DrinkPanelCheck
     public static void Run()
     {
         EditorSceneManager.OpenScene("Assets/Scenes/Main.unity");
+        Object.FindAnyObjectByType<TitleScreen>().gameObject.SetActive(false); // straight to the shop
         browser = Object.FindAnyObjectByType<DrinkBrowser>();
         cup = browser.cup;
         browser.ShowRoot();
