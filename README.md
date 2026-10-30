@@ -102,6 +102,7 @@ MatchaManager/                 the Unity project
   Assets/Audio/                sound effects
   Tools/export_art.sh          splits the Aseprite file into Assets/Art/Layers
   Tools/make_sfx.py            synthesizes every sound effect (pure Python)
+  Tools/make_loop.py           cuts a music export into a seamless loop
 Sprites/
   background_claude.lua        Aseprite script that draws all the art
   background_claude.aseprite   its output: the layered 480x270 screen
@@ -163,6 +164,13 @@ Drop tracks into `MatchaManager/Assets/Audio/Music/`, then run **Build Scene**. 
 | `Summary` | end-of-day summary | `Summary.ogg` |
 
 - A single track loops. Several Shop tracks play one after another, in name order.
+- For a seamless loop, run the export through `Tools/make_loop.py` first. It cuts the track to whole bars and folds the reverb tail back onto the start:
+
+  ```bash
+  python3 MatchaManager/Tools/make_loop.py Shop.wav MatchaManager/Assets/Audio/Music/Shop.wav 94 8
+  ```
+
+  The arguments after the two files are the BPM and the number of bars.
 - Switching between screens crossfades, and the music turns down while paused.
 - Any format Unity reads works (.ogg, .mp3, .wav). Music imports as streamed Vorbis.
 - The fade time and volumes are on the **Music** object's `MusicPlayer`. Build Scene rebuilds the scene, though, so for lasting changes edit the defaults in `MusicPlayer.cs`.
